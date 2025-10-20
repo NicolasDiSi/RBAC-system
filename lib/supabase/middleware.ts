@@ -32,12 +32,12 @@ export async function updateSession(request: NextRequest) {
 
   // Protect admin routes
   if (request.nextUrl.pathname.startsWith("/admin") && !user) {
-    return NextResponse.redirect(new URL("/login", request.url))
+    return NextResponse.redirect(new URL("/auth/login", request.url))
   }
 
   // Protect dashboard routes
   if (request.nextUrl.pathname.startsWith("/dashboard") && !user) {
-    return NextResponse.redirect(new URL("/login", request.url))
+    return NextResponse.redirect(new URL("/auth/login", request.url))
   }
 
   return supabaseResponse

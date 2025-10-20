@@ -38,14 +38,14 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
 
   // 2. Define las rutas públicas que no requieren ninguna acción.
-  const publicRoutes = ["/login", "/verification", "/api/auth/callback", "/api/auth/google"];
+  const publicRoutes = ["/auth/login","/auth/recover-password","/auth/signup", "/auth/verification", "/api/auth/callback", "/api/auth/google"];
   if (publicRoutes.includes(pathname)) {
     return response;
   }
 
   // 3. Si no hay usuario autenticado, redirige al login.
   if (!user) {
-    return NextResponse.redirect(new URL("/login", request.url));
+    return NextResponse.redirect(new URL("/auth/login", request.url));
   }
 
   // 4. Si hay usuario, verifica su estado en nuestra tabla 'users'.

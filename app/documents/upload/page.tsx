@@ -8,7 +8,7 @@ export default async function UploadDocumentPage() {
   const user = await getCurrentUser()
 
   if (!user || !user.is_active) {
-    redirect("/login")
+    redirect("/auth/login")
   }
 
   const hasAccess = await checkPermission("documents.create")

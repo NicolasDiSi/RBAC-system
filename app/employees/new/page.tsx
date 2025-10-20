@@ -7,7 +7,7 @@ export default async function NewEmployeePage() {
   const user = await getCurrentUser()
 
   if (!user || !user.is_active) {
-    redirect("/login")
+    redirect("/auth/login")
   }
 
   const hasAccess = await checkPermission("employees.create")

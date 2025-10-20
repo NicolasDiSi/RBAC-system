@@ -19,7 +19,7 @@ export default function VerificationPage() {
             Recibirás una notificación una vez que un administrador haya activado tu cuenta.
             Hasta entonces, no podrás acceder al sistema.
           </p>
-          <Link href="/login">
+          <Link href="/auth/login">
             <Button variant="outline" className="w-full bg-transparent">
               Volver al inicio
             </Button>
