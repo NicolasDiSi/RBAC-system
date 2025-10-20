@@ -11,11 +11,6 @@ import { RecentActivity } from "@/components/dashboard/recent-activity"
 
 export default async function DashboardPage() {
   const user = await getCurrentUser()
-
-  if (!user) {
-    redirect("/login")
-  }
-
   // Check if user is active
   if (!user.is_active) {
     return (
