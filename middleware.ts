@@ -58,7 +58,7 @@ export async function middleware(request: NextRequest) {
   // 5. Si el perfil no existe o está inactivo, CIERRA SU SESIÓN y lo redirige.
   if (!userProfile || !userProfile.is_active) {
     await supabase.auth.signOut();
-    return NextResponse.redirect(new URL("/verification", request.url));
+    return NextResponse.redirect(new URL("/auth/verification", request.url));
   }
 
   // 6. Si el usuario está activo, comprueba los permisos para la ruta.
