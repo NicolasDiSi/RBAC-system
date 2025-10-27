@@ -5,17 +5,6 @@ import { AdminLayout } from "@/components/admin/admin-layout"
 import { RolesTable } from "@/components/admin/roles-table"
 
 export default async function AdminRolesPage() {
-  const user = await getCurrentUser()
-
-  if (!user || !user.is_active) {
-    redirect("/auth/login")
-  }
-
-  const hasAccess = await checkPermission("roles.read")
-  if (!hasAccess) {
-    redirect("/dashboard")
-  }
-
   const supabase = await getSupabaseServerClient()
 
   // Fetch all roles with permission counts

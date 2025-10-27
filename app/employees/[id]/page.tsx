@@ -5,17 +5,6 @@ import { AdminLayout } from "@/components/admin/admin-layout"
 import { EmployeeDetail } from "@/components/employees/employee-detail"
 
 export default async function EmployeeDetailPage({ params }: { params: { id: string } }) {
-  const user = await getCurrentUser()
-
-  if (!user || !user.is_active) {
-    redirect("/auth/login")
-  }
-
-  const hasAccess = await checkPermission("employees.read")
-  if (!hasAccess) {
-    redirect("/employees")
-  }
-
   const supabase = await getSupabaseServerClient()
 
   // Fetch employee with related data

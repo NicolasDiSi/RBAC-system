@@ -4,17 +4,6 @@ import { AdminLayout } from "@/components/admin/admin-layout"
 import { EmployeeForm } from "@/components/employees/employee-form"
 
 export default async function NewEmployeePage() {
-  const user = await getCurrentUser()
-
-  if (!user || !user.is_active) {
-    redirect("/auth/login")
-  }
-
-  const hasAccess = await checkPermission("employees.create")
-  if (!hasAccess) {
-    redirect("/employees")
-  }
-
   return (
     <AdminLayout>
       <div className="max-w-3xl space-y-6">

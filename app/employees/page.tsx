@@ -8,17 +8,6 @@ import Link from "next/link"
 import { Plus } from "lucide-react"
 
 export default async function EmployeesPage() {
-  const user = await getCurrentUser()
-
-  if (!user || !user.is_active) {
-    redirect("/auth/login")
-  }
-
-  const hasAccess = await checkPermission("employees.read")
-  if (!hasAccess) {
-    redirect("/dashboard")
-  }
-
   const supabase = await getSupabaseServerClient()
 
   // Fetch all employees

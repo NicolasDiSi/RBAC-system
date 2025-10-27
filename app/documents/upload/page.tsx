@@ -5,16 +5,6 @@ import { AdminLayout } from "@/components/admin/admin-layout"
 import { DocumentUploadForm } from "@/components/documents/document-upload-form"
 
 export default async function UploadDocumentPage() {
-  const user = await getCurrentUser()
-
-  if (!user || !user.is_active) {
-    redirect("/auth/login")
-  }
-
-  const hasAccess = await checkPermission("documents.create")
-  if (!hasAccess) {
-    redirect("/documents")
-  }
 
   const supabase = await getSupabaseServerClient()
 

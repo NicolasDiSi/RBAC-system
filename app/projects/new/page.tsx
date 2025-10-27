@@ -4,17 +4,6 @@ import { AdminLayout } from "@/components/admin/admin-layout"
 import { ProjectForm } from "@/components/projects/project-form"
 
 export default async function NewProjectPage() {
-  const user = await getCurrentUser()
-
-  if (!user || !user.is_active) {
-    redirect("/auth/login")
-  }
-
-  const hasAccess = await checkPermission("projects.create")
-  if (!hasAccess) {
-    redirect("/projects")
-  }
-
   return (
     <AdminLayout>
       <div className="max-w-3xl space-y-6">

@@ -7,17 +7,6 @@ import { Button } from "@/components/ui/button"
 import { Download, FileText, Users, Building2, TrendingUp } from "lucide-react"
 
 export default async function ReportsPage() {
-  const user = await getCurrentUser()
-
-  if (!user || !user.is_active) {
-    redirect("/auth/login")
-  }
-
-  const hasAccess = await checkPermission("reports.view")
-  if (!hasAccess) {
-    redirect("/dashboard")
-  }
-
   const supabase = await getSupabaseServerClient()
 
   // Fetch summary statistics

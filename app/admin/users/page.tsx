@@ -5,17 +5,6 @@ import { AdminLayout } from "@/components/admin/admin-layout"
 import { UsersTable } from "@/components/admin/users-table"
 
 export default async function AdminUsersPage() {
-  const user = await getCurrentUser()
-
-  if (!user || !user.is_active) {
-    redirect("/auth/login")
-  }
-
-  const hasAccess = await checkPermission("users.read")
-  if (!hasAccess) {
-    redirect("/dashboard")
-  }
-
   const supabase = await getSupabaseServerClient()
 
   // Fetch all users with their roles

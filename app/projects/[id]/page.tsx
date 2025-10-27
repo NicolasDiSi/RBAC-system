@@ -5,17 +5,6 @@ import { AdminLayout } from "@/components/admin/admin-layout"
 import { ProjectDetail } from "@/components/projects/project-detail"
 
 export default async function ProjectDetailPage({ params }: { params: { id: string } }) {
-  const user = await getCurrentUser()
-
-  if (!user || !user.is_active) {
-    redirect("/auth/login")
-  }
-
-  const hasAccess = await checkPermission("projects.read")
-  if (!hasAccess) {
-    redirect("/projects")
-  }
-
   const supabase = await getSupabaseServerClient()
 
   // Fetch project
