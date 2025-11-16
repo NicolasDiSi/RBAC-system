@@ -60,7 +60,8 @@ export function UsersTable({ users, roles }) {
     const formData = new FormData()
     Object.entries(values).forEach(([key, value]) => {
       if (key === 'password' && !value) return
-      formData.append(key, String(value))
+      // Append empty string for null/undefined, otherwise convert to string
+      formData.append(key, value === null || value === undefined ? '' : String(value))
     })
     await action(formData)
   }

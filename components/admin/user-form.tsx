@@ -52,7 +52,7 @@ export const UserForm: FC<UserFormProps> = ({ user, roles, onSubmit, onSuccess, 
             name: '',
             email: '',
             password: '',
-            role_id: null,
+            role_id: undefined,
             is_active: true,
           }
     )
