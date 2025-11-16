@@ -1,7 +1,6 @@
 import { enforceAuthentication } from "@/lib/services/auth/protection";
 import { checkPermission } from "@/lib/services/auth/permissions";
 import { getSupabaseServerClient } from "@/lib/services/supabase/server";
-import { AdminLayout } from "@/components/admin/admin-layout";
 import { DocumentUploadForm } from "@/components/documents/document-upload-form";
 import { redirect } from "next/navigation";
 
@@ -19,7 +18,6 @@ export default async function UploadDocumentPage() {
   const { data: employees } = await supabase.from("empleados").select("*").order("apellido");
 
   return (
-    <AdminLayout>
       <div className="max-w-3xl space-y-6">
         <div>
           <h1 className="text-3xl font-bold">Upload Document</h1>
@@ -27,6 +25,5 @@ export default async function UploadDocumentPage() {
         </div>
         <DocumentUploadForm employees={employees || []} />
       </div>
-    </AdminLayout>
   );
 }

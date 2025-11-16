@@ -1,7 +1,6 @@
 import { enforceAuthentication } from "@/lib/services/auth/protection";
 import { checkPermission } from "@/lib/services/auth/permissions";
 import { getSupabaseServerClient } from "@/lib/services/supabase/server";
-import { AdminLayout } from "@/components/admin/admin-layout";
 import { EmployeesTable } from "@/components/employees/employees-table";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -24,7 +23,6 @@ export default async function EmployeesPage() {
   const canCreate = await checkPermission("employees.create");
 
   return (
-    <AdminLayout>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -42,6 +40,5 @@ export default async function EmployeesPage() {
         </div>
         <EmployeesTable employees={employees || []} />
       </div>
-    </AdminLayout>
   );
 }

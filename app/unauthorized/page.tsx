@@ -1,10 +1,8 @@
-import { AdminLayout } from "@/components/admin/admin-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ShieldAlert } from "lucide-react";
 
 export default function UnauthorizedPage() {
   return (
-    <AdminLayout>
       <div className="flex h-full flex-col items-center justify-center">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
@@ -21,6 +19,5 @@ export default function UnauthorizedPage() {
           </CardContent>
         </Card>
       </div>
-    </AdminLayout>
   );
 }

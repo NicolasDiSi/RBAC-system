@@ -1,6 +1,5 @@
 import { redirect, notFound } from "next/navigation"
 import { getSupabaseServerClient } from "@/lib/services/supabase/server"
-import { AdminLayout } from "@/components/admin/admin-layout"
 import { EmployeeDetail } from "@/components/employees/employee-detail"
 
 export default async function EmployeeDetailPage({ params }: { params: { id: string } }) {
@@ -41,13 +40,11 @@ export default async function EmployeeDetailPage({ params }: { params: { id: str
     .order("fecha_evento", { ascending: false })
 
   return (
-    <AdminLayout>
       <EmployeeDetail
         employee={employee}
         assignments={assignments || []}
         documents={documents || []}
         history={history || []}
       />
-    </AdminLayout>
   )
 }

@@ -1,9 +1,7 @@
-import { AdminLayout } from "@/components/admin/admin-layout";
 import { UserForm } from "@/components/admin/user-form";
 
 export default function NewUserPage() {
   return (
-    <AdminLayout>
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold">Create New User</h1>
@@ -13,6 +11,5 @@ export default function NewUserPage() {
         </div>
         <UserForm />
       </div>
-    </AdminLayout>
   );
 }
