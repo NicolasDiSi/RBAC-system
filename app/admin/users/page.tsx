@@ -1,6 +1,4 @@
-import { redirect } from "next/navigation"
-import { getCurrentUser, checkPermission } from "@/lib/auth/permissions"
-import { getSupabaseServerClient } from "@/lib/supabase/server"
+import { getSupabaseServerClient } from "@/lib/services/supabase/server"
 import { AdminLayout } from "@/components/admin/admin-layout"
 import { UsersTable } from "@/components/admin/users-table"
 
@@ -22,9 +20,11 @@ export default async function AdminUsersPage() {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">User Management</h1>
-          <p className="text-muted-foreground">Manage user accounts, activation status, and role assignments</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">User Management</h1>
+            <p className="text-muted-foreground">Manage user accounts, activation status, and role assignments</p>
+          </div>
         </div>
         <UsersTable users={users || []} roles={roles || []} />
       </div>

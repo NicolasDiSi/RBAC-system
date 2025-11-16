@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { getSupabaseServerClient } from "@/lib/supabase/server"
+import { getSupabaseServerClient } from "@/lib/services/supabase/server"
 
 // This endpoint can be called by a cron job to check and update document expiration status
 export async function GET() {

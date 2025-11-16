@@ -1,16 +1,17 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
-import { getSupabaseServerClient } from "@/lib/supabase/server"
-import { checkPermission, getCurrentUser } from "@/lib/auth/permissions"
+import { getAuthenticatedUser } from "@/lib/services/auth/user"
+import { getSupabaseServerClient } from "@/lib/services/supabase/server"
+import { checkPermission } from "@/lib/services/auth/permissions"
 
 export async function createProject(data: any) {
+  const user = await getAuthenticatedUser()
   const hasPermission = await checkPermission("projects.create")
   if (!hasPermission) {
     throw new Error("Unauthorized")
   }
 
-  const user = await getCurrentUser()
   const supabase = await getSupabaseServerClient()
 
   const { data: project, error } = await supabase
@@ -31,12 +32,12 @@ export async function createProject(data: any) {
 }
 
 export async function createAssignment(data: any) {
+  const user = await getAuthenticatedUser()
   const hasPermission = await checkPermission("assignments.create")
   if (!hasPermission) {
     throw new Error("Unauthorized")
   }
 
-  const user = await getCurrentUser()
   const supabase = await getSupabaseServerClient()
 
   // Get employee details for history

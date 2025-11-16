@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS roles (
 CREATE TABLE IF NOT EXISTS users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   email VARCHAR(255) UNIQUE NOT NULL,
+  hashed_password TEXT,
   google_id VARCHAR(255) UNIQUE,
   name VARCHAR(255) NOT NULL,
   avatar_url TEXT,

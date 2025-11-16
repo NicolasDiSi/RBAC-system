@@ -1,8 +1,9 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
-import { getSupabaseServerClient } from "@/lib/supabase/server"
-import { checkPermission, getCurrentUser } from "@/lib/auth/permissions"
+import { getSupabaseServerClient } from "@/lib/services/supabase/server"
+import { checkPermission } from "@/lib/services/auth/permissions"
+import { getAuthenticatedUser } from "@/lib/services/auth/user"
 
 export async function createEmployee(data: any) {
   const hasPermission = await checkPermission("employees.create")
@@ -10,7 +11,7 @@ export async function createEmployee(data: any) {
     throw new Error("Unauthorized")
   }
 
-  const user = await getCurrentUser()
+  const user = await getAuthenticatedUser()
   const supabase = await getSupabaseServerClient()
 
   const { data: employee, error } = await supabase

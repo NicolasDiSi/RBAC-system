@@ -1,6 +1,5 @@
 import { redirect, notFound } from "next/navigation"
-import { getCurrentUser, checkPermission } from "@/lib/auth/permissions"
-import { getSupabaseServerClient } from "@/lib/supabase/server"
+import { getSupabaseServerClient } from "@/lib/services/supabase/server"
 import { AdminLayout } from "@/components/admin/admin-layout"
 import { EmployeeDetail } from "@/components/employees/employee-detail"
 

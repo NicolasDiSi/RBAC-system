@@ -1,16 +1,17 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
-import { getSupabaseServerClient } from "@/lib/supabase/server"
-import { checkPermission, getCurrentUser } from "@/lib/auth/permissions"
+import { getAuthenticatedUser } from "@/lib/services/auth/user"
+import { getSupabaseServerClient } from "@/lib/services/supabase/server"
+import { checkPermission } from "@/lib/services/auth/permissions"
 
 export async function uploadDocument(formData: FormData) {
+  const user = await getAuthenticatedUser()
   const hasPermission = await checkPermission("documents.create")
   if (!hasPermission) {
     throw new Error("Unauthorized")
   }
 
-  const user = await getCurrentUser()
   const supabase = await getSupabaseServerClient()
 
   const empleado_id = formData.get("empleado_id") as string
@@ -66,6 +67,7 @@ export async function uploadDocument(formData: FormData) {
 }
 
 export async function deleteDocument(documentId: string) {
+  const user = await getAuthenticatedUser()
   const hasPermission = await checkPermission("documents.delete")
   if (!hasPermission) {
     throw new Error("Unauthorized")

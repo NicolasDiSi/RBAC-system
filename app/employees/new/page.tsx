@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation"
-import { getCurrentUser, checkPermission } from "@/lib/auth/permissions"
+import { getCurrentUser, checkPermission } from "@/lib/services/auth/permissions"
 import { AdminLayout } from "@/components/admin/admin-layout"
 import { EmployeeForm } from "@/components/employees/employee-form"
 

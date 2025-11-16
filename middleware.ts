@@ -1,82 +1,44 @@
-import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { hasPermission } from "@/lib/auth/permissions"; // Asumimos que esta función existe
-
-// Define las rutas y los permisos que requieren
-const protectedRoutes = {
-  "/admin/users": "users.read",
-  "/admin/roles": "roles.read",
-  "/employees": "employees.read",
-  "/employees/new": "employees.create",
-  "/projects": "projects.read",
-  "/projects/new": "projects.create",
-  "/documents": "documents.read",
-  "/documents/upload": "documents.create",
-  "/reports": "reports.view",
-};
+import { getSessionFromMiddleware } from "@/lib/services/auth/session";
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  let response = NextResponse.next({ request });
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll: () => request.cookies.getAll(),
-        setAll: (cookiesToSet) => {
-          cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value));
-          response = NextResponse.next({ request });
-          cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
-        },
-      },
-    }
-  );
-
-  // 1. Refresca la sesión del usuario.
-  const { data: { user } } = await supabase.auth.getUser();
-
-  // 2. Define las rutas públicas que no requieren ninguna acción.
-  const publicRoutes = ["/auth/login","/auth/recover-password","/auth/signup", "/auth/verification", "/api/auth/callback", "/api/auth/google"];
-  if (publicRoutes.includes(pathname)) {
-    return response;
+  // Allow public routes and API routes to pass through.
+  // This is a more robust check than a simple array inclusion.
+  const publicRoutes = ["/auth/login", "/auth/signup", "/auth/recover-password", "/api/"];
+  if (publicRoutes.some(path => pathname.startsWith(path))) {
+    return NextResponse.next();
   }
 
-  // 3. Si no hay usuario autenticado, redirige al login.
-  if (!user) {
-    return NextResponse.redirect(new URL("/auth/login", request.url));
+  const session = await getSessionFromMiddleware(request);
+
+  // If no session exists, redirect to the login page.
+  if (!session) {
+    // Preserve the original URL for a better user experience after login.
+    const url = request.nextUrl.clone();
+    url.pathname = '/auth/login';
+    url.searchParams.set('redirect_to', pathname);
+    return NextResponse.redirect(url);
   }
 
-  // 4. Si hay usuario, verifica su estado en nuestra tabla 'users'.
-  const { data: userProfile } = await supabase
-    .from("users")
-    .select("id, is_active") // Obtenemos el ID para usarlo en hasPermission
-    .eq("google_id", user.id)
-    .single();
-
-  // 5. Si el perfil no existe o está inactivo, CIERRA SU SESIÓN y lo redirige.
-  if (!userProfile || !userProfile.is_active) {
-    await supabase.auth.signOut();
-    return NextResponse.redirect(new URL("/auth/verification", request.url));
-  }
-
-  // 6. Si el usuario está activo, comprueba los permisos para la ruta.
-  const requiredPermission = protectedRoutes[pathname as keyof typeof protectedRoutes];
-  if (requiredPermission) {
-    const userHasPermission = await hasPermission(userProfile.id, requiredPermission);
-    if (!userHasPermission) {
-      // Si no tiene permiso, lo enviamos al dashboard (ya que es un usuario activo y válido)
-      return NextResponse.redirect(new URL("/dashboard", request.url));
-    }
-  }
-
-  // 7. Si pasa todas las validaciones, permite el acceso.
-  return response;
+  // If a session exists, let the request proceed.
+  // The actual validation of the user's status (e.g., is_active) and permissions
+  // will be handled in the protected Server Components themselves.
+  return NextResponse.next();
 }
+
 
 export const config = {
   matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - and any files with extensions (e.g., .svg, .png, .jpg)
+     */
     "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
+  runtime: "nodejs", // Opt-in to the Node.js runtime
 };

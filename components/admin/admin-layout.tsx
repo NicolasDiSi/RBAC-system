@@ -1,11 +1,11 @@
 import type React from "react"
-import { getCurrentUser } from "@/lib/auth/permissions"
+import { getAuthenticatedUser } from "@/lib/services/auth/user"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { Users, Shield, LayoutDashboard, Building2, FileText, Briefcase, BarChart3 } from "lucide-react"
 
 export async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const user = await getCurrentUser()
+  const user = await getAuthenticatedUser()
 
   const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },

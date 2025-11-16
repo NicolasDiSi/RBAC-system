@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation"
-import { getCurrentUser, checkPermission } from "@/lib/auth/permissions"
-import { getSupabaseServerClient } from "@/lib/supabase/server"
+import { getCurrentUser, checkPermission } from "@/lib/services/auth/permissions"
+import { getSupabaseServerClient } from "@/lib/services/supabase/server"
 import { AdminLayout } from "@/components/admin/admin-layout"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"

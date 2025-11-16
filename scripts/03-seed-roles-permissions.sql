@@ -32,7 +32,8 @@ INSERT INTO permissions (name, description, resource, action) VALUES
   ('users.update', 'Update user information and settings', 'users', 'update'),
   ('users.delete', 'Delete users from the system', 'users', 'delete'),
   ('users.activate', 'Activate or deactivate user accounts', 'users', 'activate'),
-  ('users.assign_role', 'Assign roles to users', 'users', 'assign_role')
+  ('users.assign_role', 'Assign roles to users', 'users', 'assign_role'),
+  ('users.update_password', 'Update a user/s password', 'users', 'update_password')
 ON CONFLICT (name) DO UPDATE SET
   description = EXCLUDED.description,
   resource = EXCLUDED.resource,
@@ -104,6 +105,17 @@ ON CONFLICT (name) DO UPDATE SET
   resource = EXCLUDED.resource,
   action = EXCLUDED.action;
 
+-- ============================================================================
+-- SEED: Dashboard and Analytics Permissions
+-- ============================================================================
+INSERT INTO permissions (name, description, resource, action) VALUES
+  ('dashboard.view', 'View dashboard and home page', 'dashboard', 'view'),
+  ('dashboard.export', 'Export reports to various formats', 'dashboard', 'export')
+ON CONFLICT (name) DO UPDATE SET
+  description = EXCLUDED.description,
+  resource = EXCLUDED.resource,
+  action = EXCLUDED.action;
+  
 -- ============================================================================
 -- SEED: Reports and Analytics Permissions
 -- ============================================================================

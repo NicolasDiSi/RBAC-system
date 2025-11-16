@@ -1,138 +1,259 @@
-"use client"
+'use client'
 
-import type React from "react"
+import { useRouter } from 'next/navigation'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
+import { toast } from 'sonner'
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Button } from '@/components/ui/button'
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { createEmployee } from "@/app/actions/employees"
 
+const formSchema = z.object({
+  nombre: z.string().min(2, { message: 'First name must be at least 2 characters.' }),
+  apellido: z.string().min(2, { message: 'Last name must be at least 2 characters.' }),
+  dni: z.string().min(8, { message: 'DNI must be at least 8 characters.' }),
+  fecha_nacimiento: z.string().optional(),
+  telefono: z.string().optional(),
+  email: z.string().email({ message: 'Invalid email address.' }).optional(),
+  direccion: z.string().optional(),
+  fecha_ingreso: z.string(),
+  tipo_contrato: z.string().optional(),
+  categoria: z.string().optional(),
+  observaciones: z.string().optional(),
+})
+
 export function EmployeeForm() {
   const router = useRouter()
-  const [loading, setLoading] = useState(false)
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      nombre: '',
+      apellido: '',
+      dni: '',
+      fecha_nacimiento: '',
+      telefono: '',
+      email: '',
+      direccion: '',
+      fecha_ingreso: '',
+      tipo_contrato: '',
+      categoria: '',
+      observaciones: '',
+    },
+  })
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    setLoading(true)
+  const { isSubmitting } = form.formState
 
-    const formData = new FormData(e.currentTarget)
-    const data = {
-      nombre: formData.get("nombre") as string,
-      apellido: formData.get("apellido") as string,
-      dni: formData.get("dni") as string,
-      fecha_nacimiento: formData.get("fecha_nacimiento") as string,
-      telefono: formData.get("telefono") as string,
-      email: formData.get("email") as string,
-      direccion: formData.get("direccion") as string,
-      fecha_ingreso: formData.get("fecha_ingreso") as string,
-      tipo_contrato: formData.get("tipo_contrato") as string,
-      categoria: formData.get("categoria") as string,
-      observaciones: formData.get("observaciones") as string,
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    try {
+      await createEmployee(values)
+      toast.success('Employee created successfully!')
+      router.push('/employees')
+    } catch (error) {
+      toast.error('Failed to create employee.')
     }
-
-    await createEmployee(data)
-    router.push("/employees")
   }
 
   return (
-    <form onSubmit={handleSubmit}>
-      <Card>
-        <CardHeader>
-          <CardTitle>Employee Information</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="nombre">First Name *</Label>
-              <Input id="nombre" name="nombre" required />
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)}>
+        <Card>
+          <CardHeader>
+            <CardTitle>Employee Information</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid gap-4 md:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="nombre"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>First Name *</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="apellido"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Last Name *</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="apellido">Last Name *</Label>
-              <Input id="apellido" name="apellido" required />
-            </div>
-          </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="dni">DNI *</Label>
-              <Input id="dni" name="dni" required />
+            <div className="grid gap-4 md:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="dni"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>DNI *</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="fecha_nacimiento"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Date of Birth</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="fecha_nacimiento">Date of Birth</Label>
-              <Input id="fecha_nacimiento" name="fecha_nacimiento" type="date" />
-            </div>
-          </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="telefono">Phone</Label>
-              <Input id="telefono" name="telefono" type="tel" />
+            <div className="grid gap-4 md:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="telefono"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Phone</FormLabel>
+                    <FormControl>
+                      <Input type="tel" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input type="email" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" name="email" type="email" />
-            </div>
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="direccion">Address</Label>
-            <Input id="direccion" name="direccion" />
-          </div>
+            <FormField
+              control={form.control}
+              name="direccion"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Address</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="space-y-2">
-              <Label htmlFor="fecha_ingreso">Start Date *</Label>
-              <Input id="fecha_ingreso" name="fecha_ingreso" type="date" required />
+            <div className="grid gap-4 md:grid-cols-3">
+              <FormField
+                control={form.control}
+                name="fecha_ingreso"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Start Date *</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="tipo_contrato"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Contract Type</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select type" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="planta_permanente">Planta Permanente</SelectItem>
+                        <SelectItem value="contratado">Contratado</SelectItem>
+                        <SelectItem value="eventual">Eventual</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="categoria"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Category</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select category" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="oficial">Oficial</SelectItem>
+                        <SelectItem value="medio_oficial">Medio Oficial</SelectItem>
+                        <SelectItem value="ayudante">Ayudante</SelectItem>
+                        <SelectItem value="peon">Peón</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="tipo_contrato">Contract Type</Label>
-              <Select name="tipo_contrato">
-                <SelectTrigger>
-                  <SelectValue placeholder="Select type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="planta_permanente">Planta Permanente</SelectItem>
-                  <SelectItem value="contratado">Contratado</SelectItem>
-                  <SelectItem value="eventual">Eventual</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="categoria">Category</Label>
-              <Select name="categoria">
-                <SelectTrigger>
-                  <SelectValue placeholder="Select category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="oficial">Oficial</SelectItem>
-                  <SelectItem value="medio_oficial">Medio Oficial</SelectItem>
-                  <SelectItem value="ayudante">Ayudante</SelectItem>
-                  <SelectItem value="peon">Peón</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="observaciones">Notes</Label>
-            <Textarea id="observaciones" name="observaciones" rows={3} />
-          </div>
+            <FormField
+              control={form.control}
+              name="observaciones"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Notes</FormLabel>
+                  <FormControl>
+                    <Textarea rows={3} {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-          <div className="flex gap-4">
-            <Button type="submit" disabled={loading}>
-              {loading ? "Creating..." : "Create Employee"}
-            </Button>
-            <Button type="button" variant="outline" onClick={() => router.back()}>
-              Cancel
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </form>
+            <div className="flex gap-4">
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Creating..." : "Create Employee"}
+              </Button>
+              <Button type="button" variant="outline" onClick={() => router.back()}>
+                Cancel
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </form>
+    </Form>
   )
 }
