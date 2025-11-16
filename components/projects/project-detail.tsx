@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input"
 import Link from "next/link"
 import { ArrowLeft, Edit, UserPlus } from "lucide-react"
-import type { Obra, AsignacionContrato, Empleado } from "@/lib/types/database"
+import type { Obra, AsignacionContrato, Empleado } from "@/lib/data/types/database"
 import { createAssignment } from "@/app/actions/projects"
 import { useRouter } from "next/navigation"
 

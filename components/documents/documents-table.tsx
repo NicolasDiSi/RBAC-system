@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import Link from "next/link"
 import { useState } from "react"
 import { Download, Eye, AlertCircle } from "lucide-react"
-import type { Documento } from "@/lib/types/database"
+import type { Documento } from "@/lib/data/types/database"
 
 interface DocumentWithEmployee extends Documento {
   empleado: { nombre: string; apellido: string; dni: string } | null

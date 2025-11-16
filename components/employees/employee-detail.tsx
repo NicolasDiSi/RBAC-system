@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import Link from "next/link"
 import { ArrowLeft, Edit, FileText, History, Briefcase } from "lucide-react"
-import type { Empleado, AsignacionContrato, Documento, HistorialRelacionLaboral } from "@/lib/types/database"
+import type { Empleado, AsignacionContrato, Documento, HistorialRelacionLaboral } from "@/lib/data/types/database"
 
 interface EmployeeDetailProps {
   employee: Empleado

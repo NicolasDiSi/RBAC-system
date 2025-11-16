@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import Link from "next/link"
 import { useState } from "react"
 import { Eye } from "lucide-react"
-import type { Empleado } from "@/lib/types/database"
+import type { Empleado } from "@/lib/data/types/database"
 
 export function EmployeesTable({ employees }: { employees: Empleado[] }) {
   const [search, setSearch] = useState("")

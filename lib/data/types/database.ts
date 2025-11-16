@@ -8,6 +8,7 @@ export interface User {
   avatar_url: string | null
   is_active: boolean
   role_id: string | null
+  hashed_password: string | null
   created_at: string
   updated_at: string
 }
@@ -57,8 +58,8 @@ export interface Empleado {
 
 export interface Obra {
   id: string
+  codigo: string
   nombre: string
-  codigo: string | null
   ubicacion: string | null
   fecha_inicio: string | null
   fecha_fin_estimada: string | null
@@ -98,6 +99,7 @@ export interface Documento {
   estado: string
   observaciones: string | null
   uploaded_by: string | null
+  created_at: string
 }
 
 export interface HistorialRelacionLaboral {

@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import Link from "next/link"
 import { useState } from "react"
 import { Eye } from "lucide-react"
-import type { Obra } from "@/lib/types/database"
+import type { Obra } from "@/lib/data/types/database"
 
 interface ProjectWithCount extends Obra {
   asignaciones_contratos: { count: number }[]

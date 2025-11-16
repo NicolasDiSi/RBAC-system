@@ -1,11 +1,11 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
-import { getSupabaseServerClient } from "@/lib/services/supabase/server"
 import { deleteUserSessions } from "@/lib/services/auth/session"
 import { checkPermission } from "@/lib/services/auth/permissions"
 import { createUserSchema, editUserSchema } from "@/lib/validations/user-schema"
-import { hash } from "bcrypt"
+import { UserDAO } from "@/lib/data/user"
+import { RoleDAO } from "@/lib/data/role"
 
 export async function createUser(formData: FormData) {
   const hasPermission = await checkPermission("users.create")
@@ -13,24 +13,17 @@ export async function createUser(formData: FormData) {
     throw new Error("Unauthorized")
   }
 
-  // Convert FormData to a plain object for Zod validation
   const formObject = Object.fromEntries(formData.entries());
   const validatedFields = createUserSchema.safeParse({
     ...formObject,
-    is_active: formObject.is_active === 'true' // Ensure boolean conversion
+    is_active: formObject.is_active === 'true'
   });
 
   if (!validatedFields.success) {
-    // TODO: Return a more structured error
     throw new Error("Invalid user data.")
   }
   
-  const { password, ...userData } = validatedFields.data
-
-  const supabase = await getSupabaseServerClient()
-  const hashedPassword = await hash(password, 12)
-  await supabase.from("users").insert([{ ...userData, hashed_password: hashedPassword }])
-
+  await UserDAO.create(validatedFields.data)
 
   revalidatePath("/admin/users")
 }
@@ -41,28 +34,17 @@ export async function updateUser(userId: string, formData: FormData) {
     throw new Error("Unauthorized")
   }
 
-  // Convert FormData to a plain object for Zod validation
   const formObject = Object.fromEntries(formData.entries());
   const validatedFields = editUserSchema.safeParse({
     ...formObject,
-    is_active: formObject.is_active === 'true' // Ensure boolean conversion
+    is_active: formObject.is_active === 'true'
   });
 
   if (!validatedFields.success) {
-    // TODO: Return a more structured error
     throw new Error("Invalid user data.")
   }
 
-  const { password, ...userData } = validatedFields.data
-
-  const supabase = await getSupabaseServerClient()
-
-  if (password) {
-    const hashedPassword = await hash(password, 12)
-    await supabase.from("users").update({ ...userData, hashed_password: hashedPassword }).eq("id", userId)
-  } else {
-    await supabase.from("users").update(userData).eq("id", userId)
-  }
+  await UserDAO.update(userId, validatedFields.data)
 
   revalidatePath("/admin/users")
 }
@@ -74,8 +56,7 @@ export async function updateUserStatus(userId: string, isActive: boolean) {
     throw new Error("Unauthorized")
   }
 
-  const supabase = await getSupabaseServerClient()
-  await supabase.from("users").update({ is_active: isActive, updated_at: new Date().toISOString() }).eq("id", userId)
+  await UserDAO.updateStatus(userId, isActive)
 
   revalidatePath("/admin/users")
 }
@@ -86,13 +67,8 @@ export async function updateUserRole(userId: string, roleId: string) {
     throw new Error("Unauthorized")
   }
 
-  const supabase = await getSupabaseServerClient()
-  const updateData = roleId === "none" ? { role_id: null } : { role_id: roleId }
-
-  await supabase
-    .from("users")
-    .update({ ...updateData, updated_at: new Date().toISOString() })
-    .eq("id", userId)
+  const roleIdOrNull = roleId === "none" ? null : roleId
+  await UserDAO.updateRole(userId, roleIdOrNull)
 
   revalidatePath("/admin/users")
 }
@@ -103,20 +79,7 @@ export async function updateRolePermissions(roleId: string, permissionIds: strin
     throw new Error("Unauthorized")
   }
 
-  const supabase = await getSupabaseServerClient()
-
-  // Delete existing permissions for this role
-  await supabase.from("role_permissions").delete().eq("role_id", roleId)
-
-  // Insert new permissions
-  if (permissionIds.length > 0) {
-    const rolePermissions = permissionIds.map((permissionId) => ({
-      role_id: roleId,
-      permission_id: permissionId,
-    }))
-
-    await supabase.from("role_permissions").insert(rolePermissions)
-  }
+  await RoleDAO.updatePermissions(roleId, permissionIds)
 
   revalidatePath("/admin/roles")
 }
@@ -127,14 +90,7 @@ export async function getRoles() {
     throw new Error("Unauthorized")
   }
 
-  const supabase = await getSupabaseServerClient()
-  const { data, error } = await supabase.from("roles").select("id, name")
-
-  if (error) {
-    throw new Error(error.message)
-  }
-
-  return data
+  return RoleDAO.getAll()
 }
 
 export async function updateUserPassword(userId: string, formData: FormData) {
@@ -150,13 +106,7 @@ export async function updateUserPassword(userId: string, formData: FormData) {
     throw new Error("Password must be at least 8 characters.")
   }
 
-  const hashedPassword = await hash(newPassword, 12)
-
-  const supabase = await getSupabaseServerClient()
-  await supabase
-    .from("users")
-    .update({ hashed_password: hashedPassword, updated_at: new Date().toISOString() })
-    .eq("id", userId)
+  await UserDAO.updatePassword(userId, newPassword)
   
   if (signOutUser) {
     await deleteUserSessions(userId)
@@ -165,7 +115,8 @@ export async function updateUserPassword(userId: string, formData: FormData) {
   revalidatePath("/admin/users")
 }
 
-// Refactor resetPasswordEmail Service
+// This action doesn't use our DAO because it uses Supabase's auth helpers,
+// which is a separate part of their API. This is fine.
 export async function resetPasswordForEmail(email: string) {
   const hasPermission = await checkPermission("users.update_password")
   if (!hasPermission) {
