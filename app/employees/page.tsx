@@ -1,19 +1,27 @@
-import { redirect } from "next/navigation"
-import { checkPermission } from "@/lib/services/auth/permissions"
-import { getSupabaseServerClient } from "@/lib/services/supabase/server"
-import { AdminLayout } from "@/components/admin/admin-layout"
-import { EmployeesTable } from "@/components/employees/employees-table"
-import { Button } from "@/components/ui/button"
-import Link from "next/link"
-import { Plus } from "lucide-react"
+import { enforceAuthentication } from "@/lib/services/auth/protection";
+import { checkPermission } from "@/lib/services/auth/permissions";
+import { getSupabaseServerClient } from "@/lib/services/supabase/server";
+import { AdminLayout } from "@/components/admin/admin-layout";
+import { EmployeesTable } from "@/components/employees/employees-table";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { Plus } from "lucide-react";
+import { redirect } from "next/navigation";
 
 export default async function EmployeesPage() {
-  const supabase = await getSupabaseServerClient()
+  await enforceAuthentication();
+  const canView = await checkPermission("employees.read");
+
+  if (!canView) {
+    redirect("/unauthorized");
+  }
+
+  const supabase = await getSupabaseServerClient();
 
   // Fetch all employees
-  const { data: employees } = await supabase.from("empleados").select("*").order("created_at", { ascending: false })
+  const { data: employees } = await supabase.from("empleados").select("*").order("created_at", { ascending: false });
 
-  const canCreate = await checkPermission("employees.create")
+  const canCreate = await checkPermission("employees.create");
 
   return (
     <AdminLayout>
@@ -35,5 +43,5 @@ export default async function EmployeesPage() {
         <EmployeesTable employees={employees || []} />
       </div>
     </AdminLayout>
-  )
+  );
 }

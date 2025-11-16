@@ -1,26 +1,35 @@
-import { redirect } from "next/navigation"
-import { checkPermission } from "@/lib/services/auth/permissions"
-import { getSupabaseServerClient } from "@/lib/services/supabase/server"
-import { AdminLayout } from "@/components/admin/admin-layout"
-import { DocumentsTable } from "@/components/documents/documents-table"
-import { Button } from "@/components/ui/button"
-import Link from "next/link"
-import { Plus } from "lucide-react"
+import { enforceAuthentication } from "@/lib/services/auth/protection";
+import { checkPermission } from "@/lib/services/auth/permissions";
+import { getSupabaseServerClient } from "@/lib/services/supabase/server";
+import { AdminLayout } from "@/components/admin/admin-layout";
+import { DocumentsTable } from "@/components/documents/documents-table";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { Plus } from "lucide-react";
+import { redirect } from "next/navigation";
 
 export default async function DocumentsPage() {
+  await enforceAuthentication();
+  const canView = await checkPermission("documents.read");
 
-  const supabase = await getSupabaseServerClient()
+  if (!canView) {
+    redirect("/unauthorized");
+  }
+
+  const supabase = await getSupabaseServerClient();
 
   // Fetch all documents with employee information
   const { data: documents } = await supabase
     .from("documentos")
-    .select(`
+    .select(
+      `
       *,
       empleado:empleados(nombre, apellido, dni)
-    `)
-    .order("fecha_subida", { ascending: false })
+    `
+    )
+    .order("fecha_subida", { ascending: false });
 
-  const canCreate = await checkPermission("documents.create")
+  const canCreate = await checkPermission("documents.create");
 
   return (
     <AdminLayout>
@@ -42,5 +51,5 @@ export default async function DocumentsPage() {
         <DocumentsTable documents={documents || []} />
       </div>
     </AdminLayout>
-  )
+  );
 }

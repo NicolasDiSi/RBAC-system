@@ -7,9 +7,15 @@ import { Users, Building2, Briefcase, FileText, TrendingUp, UserCheck, Clock } f
 import Link from "next/link";
 import { DashboardCharts } from "@/components/dashboard/dashboard-charts";
 import { RecentActivity } from "@/components/dashboard/recent-activity";
+import { redirect } from "next/navigation";
 
 export default async function DashboardPage() {
 	const user = await enforceAuthentication();
+	const canView = await checkPermission("dashboard.view");
+
+	if (!canView) {
+		redirect("/unauthorized");
+	}
 
 	const supabase = await getSupabaseServerClient();
 

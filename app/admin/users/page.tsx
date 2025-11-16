@@ -1,21 +1,33 @@
-import { getSupabaseServerClient } from "@/lib/services/supabase/server"
-import { AdminLayout } from "@/components/admin/admin-layout"
-import { UsersTable } from "@/components/admin/users-table"
+import { enforceAuthentication } from "@/lib/services/auth/protection";
+import { checkPermission } from "@/lib/services/auth/permissions";
+import { getSupabaseServerClient } from "@/lib/services/supabase/server";
+import { AdminLayout } from "@/components/admin/admin-layout";
+import { UsersTable } from "@/components/admin/users-table";
+import { redirect } from "next/navigation";
 
 export default async function AdminUsersPage() {
-  const supabase = await getSupabaseServerClient()
+  await enforceAuthentication();
+  const canView = await checkPermission("users.read");
+
+  if (!canView) {
+    redirect("/unauthorized");
+  }
+
+  const supabase = await getSupabaseServerClient();
 
   // Fetch all users with their roles
   const { data: users } = await supabase
     .from("users")
-    .select(`
+    .select(
+      `
       *,
       role:roles(*)
-    `)
-    .order("created_at", { ascending: false })
+    `
+    )
+    .order("created_at", { ascending: false });
 
   // Fetch all roles for the dropdown
-  const { data: roles } = await supabase.from("roles").select("*").order("name")
+  const { data: roles } = await supabase.from("roles").select("*").order("name");
 
   return (
     <AdminLayout>
@@ -29,5 +41,5 @@ export default async function AdminUsersPage() {
         <UsersTable users={users || []} roles={roles || []} />
       </div>
     </AdminLayout>
-  )
+  );
 }

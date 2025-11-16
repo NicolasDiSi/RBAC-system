@@ -1,32 +1,40 @@
-import { redirect } from "next/navigation"
-import { getCurrentUser, checkPermission } from "@/lib/services/auth/permissions"
-import { getSupabaseServerClient } from "@/lib/services/supabase/server"
-import { AdminLayout } from "@/components/admin/admin-layout"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Download, FileText, Users, Building2, TrendingUp } from "lucide-react"
+import { enforceAuthentication } from "@/lib/services/auth/protection";
+import { checkPermission } from "@/lib/services/auth/permissions";
+import { getSupabaseServerClient } from "@/lib/services/supabase/server";
+import { AdminLayout } from "@/components/admin/admin-layout";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Download, FileText, Users, Building2, TrendingUp } from "lucide-react";
+import { redirect } from "next/navigation";
 
 export default async function ReportsPage() {
-  const supabase = await getSupabaseServerClient()
+  await enforceAuthentication();
+  const canView = await checkPermission("reports.view");
+
+  if (!canView) {
+    redirect("/unauthorized");
+  }
+
+  const supabase = await getSupabaseServerClient();
 
   // Fetch summary statistics
-  const { count: totalEmployees } = await supabase.from("empleados").select("*", { count: "exact", head: true })
+  const { count: totalEmployees } = await supabase.from("empleados").select("*", { count: "exact", head: true });
 
   const { count: activeEmployees } = await supabase
     .from("empleados")
     .select("*", { count: "exact", head: true })
-    .eq("estado", "activo")
+    .eq("estado", "activo");
 
-  const { count: totalProjects } = await supabase.from("obras").select("*", { count: "exact", head: true })
+  const { count: totalProjects } = await supabase.from("obras").select("*", { count: "exact", head: true });
 
   const { count: activeProjects } = await supabase
     .from("obras")
     .select("*", { count: "exact", head: true })
-    .eq("estado", "en_curso")
+    .eq("estado", "en_curso");
 
   const { count: totalAssignments } = await supabase
     .from("asignaciones_contratos")
-    .select("*", { count: "exact", head: true })
+    .select("*", { count: "exact", head: true });
 
   const reports = [
     {
@@ -57,7 +65,7 @@ export default async function ReportsPage() {
       stats: "All documents",
       color: "text-purple-600",
     },
-  ]
+  ];
 
   return (
     <AdminLayout>
@@ -108,5 +116,5 @@ export default async function ReportsPage() {
         </Card>
       </div>
     </AdminLayout>
-  )
+  );
 }

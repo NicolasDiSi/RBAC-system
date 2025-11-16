@@ -1,25 +1,35 @@
-import { redirect } from "next/navigation"
-import { checkPermission } from "@/lib/services/auth/permissions"
-import { getSupabaseServerClient } from "@/lib/services/supabase/server"
-import { AdminLayout } from "@/components/admin/admin-layout"
-import { ProjectsTable } from "@/components/projects/projects-table"
-import { Button } from "@/components/ui/button"
-import Link from "next/link"
-import { Plus } from "lucide-react"
+import { enforceAuthentication } from "@/lib/services/auth/protection";
+import { checkPermission } from "@/lib/services/auth/permissions";
+import { getSupabaseServerClient } from "@/lib/services/supabase/server";
+import { AdminLayout } from "@/components/admin/admin-layout";
+import { ProjectsTable } from "@/components/projects/projects-table";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { Plus } from "lucide-react";
+import { redirect } from "next/navigation";
 
 export default async function ProjectsPage() {
-  const supabase = await getSupabaseServerClient()
+  await enforceAuthentication();
+  const canView = await checkPermission("projects.read");
+
+  if (!canView) {
+    redirect("/unauthorized");
+  }
+
+  const supabase = await getSupabaseServerClient();
 
   // Fetch all projects with assignment counts
   const { data: projects } = await supabase
     .from("obras")
-    .select(`
+    .select(
+      `
       *,
       asignaciones_contratos(count)
-    `)
-    .order("created_at", { ascending: false })
+    `
+    )
+    .order("created_at", { ascending: false });
 
-  const canCreate = await checkPermission("projects.create")
+  const canCreate = await checkPermission("projects.create");
 
   return (
     <AdminLayout>
@@ -41,5 +51,5 @@ export default async function ProjectsPage() {
         <ProjectsTable projects={projects || []} />
       </div>
     </AdminLayout>
-  )
+  );
 }

@@ -1,15 +1,22 @@
-import { redirect } from "next/navigation"
-import { getCurrentUser, checkPermission } from "@/lib/services/auth/permissions"
-import { getSupabaseServerClient } from "@/lib/services/supabase/server"
-import { AdminLayout } from "@/components/admin/admin-layout"
-import { DocumentUploadForm } from "@/components/documents/document-upload-form"
+import { enforceAuthentication } from "@/lib/services/auth/protection";
+import { checkPermission } from "@/lib/services/auth/permissions";
+import { getSupabaseServerClient } from "@/lib/services/supabase/server";
+import { AdminLayout } from "@/components/admin/admin-layout";
+import { DocumentUploadForm } from "@/components/documents/document-upload-form";
+import { redirect } from "next/navigation";
 
 export default async function UploadDocumentPage() {
+  await enforceAuthentication();
+  const canCreate = await checkPermission("documents.create");
 
-  const supabase = await getSupabaseServerClient()
+  if (!canCreate) {
+    redirect("/unauthorized");
+  }
+
+  const supabase = await getSupabaseServerClient();
 
   // Fetch all employees for the dropdown
-  const { data: employees } = await supabase.from("empleados").select("*").order("apellido")
+  const { data: employees } = await supabase.from("empleados").select("*").order("apellido");
 
   return (
     <AdminLayout>
@@ -21,5 +28,5 @@ export default async function UploadDocumentPage() {
         <DocumentUploadForm employees={employees || []} />
       </div>
     </AdminLayout>
-  )
+  );
 }

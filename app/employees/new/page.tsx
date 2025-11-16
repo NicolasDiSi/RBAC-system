@@ -1,9 +1,17 @@
-import { redirect } from "next/navigation"
-import { getCurrentUser, checkPermission } from "@/lib/services/auth/permissions"
-import { AdminLayout } from "@/components/admin/admin-layout"
-import { EmployeeForm } from "@/components/employees/employee-form"
+import { enforceAuthentication } from "@/lib/services/auth/protection";
+import { checkPermission } from "@/lib/services/auth/permissions";
+import { AdminLayout } from "@/components/admin/admin-layout";
+import { EmployeeForm } from "@/components/employees/employee-form";
+import { redirect } from "next/navigation";
 
 export default async function NewEmployeePage() {
+  await enforceAuthentication();
+  const canCreate = await checkPermission("employees.create");
+
+  if (!canCreate) {
+    redirect("/unauthorized");
+  }
+
   return (
     <AdminLayout>
       <div className="max-w-3xl space-y-6">
@@ -14,5 +22,5 @@ export default async function NewEmployeePage() {
         <EmployeeForm />
       </div>
     </AdminLayout>
-  )
+  );
 }
