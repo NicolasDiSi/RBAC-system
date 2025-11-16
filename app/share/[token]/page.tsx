@@ -32,7 +32,7 @@ async function getCredentials(token: string, region: string) {
 }
 
 export default async function SharePage({ params }: { params: { token: string } }) {
-  const headersList = headers();
+  const headersList = await headers();
   const country = headersList.get('x-vercel-ip-country') || 'US'; // Default to US for local dev
 
   const { email, error } = await getCredentials(params.token, country);
