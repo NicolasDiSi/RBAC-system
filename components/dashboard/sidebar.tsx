@@ -17,6 +17,8 @@ import {
   FileText,
   LayoutDashboard,
   LucideIcon,
+  LineChart,
+  Shield,
 } from "lucide-react";
 
 const iconMap: Record<string, LucideIcon> = {
@@ -25,6 +27,8 @@ const iconMap: Record<string, LucideIcon> = {
   Briefcase,
   Building2,
   FileText,
+  LineChart,
+  Shield,
 };
 
 type NavLink = {
@@ -34,7 +38,12 @@ type NavLink = {
   permission: string;
 };
 
-export function Sidebar({ links = [] }: { links: NavLink[] }) {
+type NavGroup = {
+  title: string;
+  links: NavLink[];
+};
+
+export function Sidebar({ groups = [] }: { groups: NavGroup[] }) {
   const pathname = usePathname();
   const { isCollapsed } = useSidebar();
 
@@ -53,34 +62,43 @@ export function Sidebar({ links = [] }: { links: NavLink[] }) {
       </div>
       <nav className="flex-1 space-y-2 px-4 sm:px-6 sm:py-4">
         <TooltipProvider>
-          {links.map((link) => {
-            const Icon = iconMap[link.icon];
-            return (
-              <Tooltip key={link.href} delayDuration={0}>
-                <TooltipTrigger asChild>
-                  <Link
-                    href={link.href}
-                    className={cn(
-                      "flex items-center gap-3 rounded-lg text-muted-foreground transition-all hover:text-primary",
-                      pathname.startsWith(link.href) && "bg-muted text-primary",
-                      isCollapsed ? "justify-center" : "px-3 py-2"
-                    )}
-                  >
-                    {Icon && <Icon className="h-5 w-5" />}
-                    <span className={cn(isCollapsed && "hidden")}>
+          {groups.map((group) => (
+            <div key={group.title} className="space-y-2">
+              {!isCollapsed && (
+                <h2 className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  {group.title}
+                </h2>
+              )}
+              {group.links.map((link) => {
+                const Icon = iconMap[link.icon];
+                return (
+                  <Tooltip key={link.href} delayDuration={0}>
+                    <TooltipTrigger asChild>
+                      <Link
+                        href={link.href}
+                        className={cn(
+                          "flex items-center gap-3 rounded-lg text-muted-foreground transition-all hover:text-primary",
+                          pathname.startsWith(link.href) &&
+                            "bg-muted text-primary",
+                          isCollapsed ? "justify-center" : "px-3 py-2"
+                        )}
+                      >
+                        {Icon && <Icon className="h-5 w-5" />}
+                        <span className={cn(isCollapsed && "hidden")}>
+                          {link.title}
+                        </span>
+                      </Link>
+                    </TooltipTrigger>
+                    <TooltipContent side="right" sideOffset={5}>
                       {link.title}
-                    </span>
-                  </Link>
-                </TooltipTrigger>
-                <TooltipContent side="right" sideOffset={5}>
-                  {link.title}
-                </TooltipContent>
-              </Tooltip>
-            );
-          })}
+                    </TooltipContent>
+                  </Tooltip>
+                );
+              })}
+            </div>
+          ))}
         </TooltipProvider>
       </nav>
     </aside>
   );
 }
-

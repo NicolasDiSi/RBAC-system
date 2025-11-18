@@ -6,36 +6,58 @@ import { UserProfile } from "@/components/dashboard/user-profile";
 import { getAuthenticatedUser } from "@/lib/services/auth/user";
 import { checkPermission } from "@/lib/services/auth/permissions";
 
-const navLinks = [
+const navLinkGroups = [
   {
-    title: "Dashboard",
-    icon: "LayoutDashboard",
-    href: "/dashboard",
-    permission: "dashboard.view",
+    title: "Management",
+    links: [
+      {
+        title: "Dashboard",
+        icon: "LayoutDashboard",
+        href: "/dashboard",
+        permission: "dashboard.view",
+      },
+      {
+        title: "Projects",
+        icon: "Building2",
+        href: "/projects",
+        permission: "projects.read",
+      },
+      {
+        title: "Employees",
+        icon: "Briefcase",
+        href: "/employees",
+        permission: "employees.read",
+      },
+      {
+        title: "Documents",
+        icon: "FileText",
+        href: "/documents",
+        permission: "documents.read",
+      },
+      {
+        title: "Reports",
+        icon: "LineChart",
+        href: "/reports",
+        permission: "reports.read",
+      },
+    ],
   },
   {
-    title: "User Management",
-    icon: "Users",
-    href: "/admin/users",
-    permission: "users.read",
-  },
-  {
-    title: "Employees",
-    icon: "Briefcase",
-    href: "/employees",
-    permission: "employees.read",
-  },
-  {
-    title: "Projects",
-    icon: "Building2",
-    href: "/projects",
-    permission: "projects.read",
-  },
-  {
-    title: "Documents",
-    icon: "FileText",
-    href: "/documents",
-    permission: "documents.read",
+    title: "Administration",
+    links: [
+      {
+        title: "Users",
+        icon: "Users",
+        href: "/admin/users",
+        permission: "users.read",
+      },
+      {
+        title: "Roles",
+        icon: "Shield",
+        href: "/admin/roles",
+        permission: "roles.read",
+      },
+    ],
   },
 ];
 
@@ -51,18 +73,24 @@ export default async function AdminDashboardLayout({
     return null;
   }
 
-  const allowedLinks = [];
-  for (const link of navLinks) {
-    const hasPerm = await checkPermission(link.permission);
-    if (hasPerm) {
-      allowedLinks.push(link);
+  const allowedLinkGroups = [];
+  for (const group of navLinkGroups) {
+    const allowedLinks = [];
+    for (const link of group.links) {
+      const hasPerm = await checkPermission(link.permission);
+      if (hasPerm) {
+        allowedLinks.push(link);
+      }
+    }
+    if (allowedLinks.length > 0) {
+      allowedLinkGroups.push({ ...group, links: allowedLinks });
     }
   }
 
   return (
     <SidebarProvider>
       <div className="flex min-h-screen">
-        <Sidebar links={allowedLinks} />
+        <Sidebar groups={allowedLinkGroups} />
         <div className="flex flex-col flex-1">
           <Navbar>
             <UserProfile user={user} />
