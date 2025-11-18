@@ -2,12 +2,21 @@
  
 import { useRouter } from 'next/navigation'
 import { useState, useCallback } from 'react'
-import { MoreHorizontal, Key, Share2, UserPlus, Edit, Mail, ShieldAlert } from 'lucide-react'
+import { MoreHorizontal, Key, Share2, UserPlus, Edit, Mail, ShieldAlert, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
-import { createUser, updateUser, updateUserPassword, resetPasswordForEmail } from '@/app/actions/admin'
+import { createUser, updateUser, updateUserPassword, resetPasswordForEmail, deleteUser } from '@/app/actions/admin'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import {
   DropdownMenu,
@@ -29,30 +38,19 @@ import { UserForm } from './user-form'
 import { ChangePasswordForm } from './change-password-form'
 import { ResetPasswordForm } from './reset-password-form'
 
-interface User {
-  id: string
-  email: string
-  name: string
-  avatar_url: string | null
-  is_active: boolean
-  role_id: string | null
-  role: { id: string; name: string } | null
-  created_at: string
-}
-
-export function UsersTable({ users, roles }) {
+export function UsersTable({ users, roles, permissions }) {
   const [isShareModalOpen, setIsShareModalOpen] = useState(false)
   const [isChangePasswordDialogOpen, setIsChangePasswordDialogOpen] = useState(false)
   const [isResetPasswordDialogOpen, setIsResetPasswordDialogOpen] = useState(false)
   const [isUserFormOpen, setIsUserFormOpen] = useState(false)
-  const [selectedUser, setSelectedUser] = useState<User | null>(null)
-  const [editingUser, setEditingUser] = useState<User | null>(null)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [selectedUser, setSelectedUser] = useState<(typeof users)[0] | null>(null)
+  const [editingUser, setEditingUser] = useState<(typeof users)[0] | null>(null)
+  const router = useRouter()
 
   const fetchUsers = useCallback(async () => {
-    // In a real app, you'd likely call a server action or API route
-    // that revalidates the path, but for now we'll just refresh the page.
-    window.location.reload()
-  }, [])
+    router.refresh()
+  }, [router])
 
   const handleFormSubmit = async (values) => {
     const isEditing = !!editingUser
@@ -78,17 +76,30 @@ export function UsersTable({ users, roles }) {
     await resetPasswordForEmail(values.email)
   }
 
-  const openUserForm = (user: User | null) => {
+  const handleDeleteUser = async () => {
+    if (!selectedUser) return
+    try {
+      await deleteUser(selectedUser.id)
+      toast.success('User deleted successfully!')
+      fetchUsers()
+    } catch (error) {
+      toast.error(error.message || 'Failed to delete user.')
+    } finally {
+      setIsDeleteDialogOpen(false)
+    }
+  }
+
+  const openUserForm = (user: (typeof users)[0] | null) => {
     setEditingUser(user)
     setIsUserFormOpen(true)
   }
 
-  const openDialog = (user: User, dialogSetter: React.Dispatch<React.SetStateAction<boolean>>) => {
+  const openDialog = (user: (typeof users)[0], dialogSetter: React.Dispatch<React.SetStateAction<boolean>>) => {
     setSelectedUser(user)
     dialogSetter(true)
   }
 
-  const openShareModal = (user: User) => {
+  const openShareModal = (user: (typeof users)[0]) => {
     setSelectedUser(user)
     setIsShareModalOpen(true)
   }
@@ -101,10 +112,12 @@ export function UsersTable({ users, roles }) {
   return (
     <>
       <div className="flex justify-end mb-4">
-        <Button onClick={() => openUserForm(null)}>
-          <UserPlus className="mr-2 h-4 w-4" />
-          New User
-        </Button>
+        {permissions.canCreate && (
+          <Button onClick={() => openUserForm(null)}>
+            <UserPlus className="mr-2 h-4 w-4" />
+            New User
+          </Button>
+        )}
       </div>
       <Table>
         <TableHeader>
@@ -139,23 +152,39 @@ export function UsersTable({ users, roles }) {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                    <DropdownMenuItem onClick={() => openUserForm(user)}>
-                      <Edit className="mr-2 h-4 w-4" />
-                      <span>Edit</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => openShareModal(user)}>
-                      <Share2 className="mr-2 h-4 w-4" />
-                      <span>Share</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => openDialog(user, setIsResetPasswordDialogOpen)}>
-                      <Mail className="mr-2 h-4 w-4" />
-                      <span>Reset Password</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => openDialog(user, setIsChangePasswordDialogOpen)}>
-                      <ShieldAlert className="mr-2 h-4 w-4" />
-                      <span>Change Password</span>
-                    </DropdownMenuItem>
+                    {permissions.canUpdate && (
+                      <DropdownMenuItem onClick={() => openUserForm(user)}>
+                        <Edit className="mr-2 h-4 w-4" />
+                        <span>Edit</span>
+                      </DropdownMenuItem>
+                    )}
+                    {permissions.canShare && (
+                      <DropdownMenuItem onClick={() => openShareModal(user)}>
+                        <Share2 className="mr-2 h-4 w-4" />
+                        <span>Share</span>
+                      </DropdownMenuItem>
+                    )}
+                    {permissions.canUpdatePassword && (
+                      <>
+                        <DropdownMenuItem onClick={() => openDialog(user, setIsResetPasswordDialogOpen)}>
+                          <Mail className="mr-2 h-4 w-4" />
+                          <span>Reset Password</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => openDialog(user, setIsChangePasswordDialogOpen)}>
+                          <ShieldAlert className="mr-2 h-4 w-4" />
+                          <span>Change Password</span>
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                    {permissions.canDelete && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => openDialog(user, setIsDeleteDialogOpen)} className="text-red-600">
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          <span>Delete</span>
+                        </DropdownMenuItem>
+                      </>
+                    )}
                   </DropdownMenuContent>
                 </DropdownMenu>
               </TableCell>
@@ -228,6 +257,21 @@ export function UsersTable({ users, roles }) {
           userId={selectedUser.id}
         />
       )}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the user account
+              and all associated data.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteUser}>Continue</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   )
 }

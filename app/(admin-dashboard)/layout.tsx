@@ -4,14 +4,6 @@ import { Navbar } from "@/components/dashboard/Navbar";
 import { SidebarProvider } from "@/lib/context/SidebarContext";
 import { UserProfile } from "@/components/dashboard/user-profile";
 import { getAuthenticatedUser } from "@/lib/services/auth/user";
-
-import {
-  Users,
-  Building2,
-  Briefcase,
-  FileText,
-  LayoutDashboard,
-} from "lucide-react";
 import { checkPermission } from "@/lib/services/auth/permissions";
 
 const navLinks = [

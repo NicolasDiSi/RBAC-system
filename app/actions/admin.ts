@@ -49,7 +49,6 @@ export async function updateUser(userId: string, formData: FormData) {
   revalidatePath("/admin/users")
 }
 
-
 export async function updateUserStatus(userId: string, isActive: boolean) {
   const hasPermission = await checkPermission("users.activate")
   if (!hasPermission) {
@@ -57,6 +56,17 @@ export async function updateUserStatus(userId: string, isActive: boolean) {
   }
 
   await UserDAO.updateStatus(userId, isActive)
+
+  revalidatePath("/admin/users")
+}
+
+export async function deleteUser(userId: string) {
+  const hasPermission = await checkPermission("users.delete")
+  if (!hasPermission) {
+    throw new Error("Unauthorized")
+  }
+
+  await UserDAO.delete(userId)
 
   revalidatePath("/admin/users")
 }

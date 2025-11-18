@@ -1,7 +1,8 @@
+import { cache } from 'react'
 import { getSupabaseServerClient } from "@/lib/services/supabase/server"
 import { getAuthenticatedUser } from "./user"
 
-export async function getUserPermissions(roleId: string | null) {
+export const getUserPermissions = cache(async (roleId: string | null) => {
   const supabase = await getSupabaseServerClient()
 
   // If the user has no role, they have no permissions.
@@ -17,7 +18,7 @@ export async function getUserPermissions(roleId: string | null) {
     .eq("role_id", roleId)
 
   return permissions?.map((rp: any) => rp.permission) || []
-}
+})
 
 export async function hasPermission(roleId: string | null, permissionName: string): Promise<boolean> {
   const permissions = await getUserPermissions(roleId)

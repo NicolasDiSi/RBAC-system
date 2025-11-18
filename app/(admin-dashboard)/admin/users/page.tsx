@@ -25,18 +25,24 @@ export default async function AdminUsersPage() {
     )
     .order("created_at", { ascending: false });
 
-  // Fetch all roles for the dropdown
-  const { data: roles } = await supabase.from("roles").select("*").order("name");
+  const { data: roles } = await supabase.from("roles").select("id, name")
+
+  const permissions = {
+    canUpdate: await checkPermission("users.update"),
+    canDelete: await checkPermission("users.delete"),
+    canUpdatePassword: await checkPermission("users.update_password"),
+    canShare: await checkPermission("users.share_credentials"), // Assuming this permission exists
+  }
 
   return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">User Management</h1>
-            <p className="text-muted-foreground">Manage user accounts, activation status, and role assignments</p>
-          </div>
-        </div>
-        <UsersTable users={users || []} roles={roles || []} />
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold">User Management</h1>
+        <p className="text-muted-foreground">
+          Manage user accounts, roles, and permissions.
+        </p>
       </div>
-  );
+      <UsersTable users={users || []} roles={roles || []} permissions={permissions} />
+    </div>
+  )
 }

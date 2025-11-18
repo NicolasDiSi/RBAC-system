@@ -51,6 +51,12 @@ export const UserDAO = {
     }
   },
 
+  async delete(userId: string): Promise<User[]> {
+    const supabase = await getSupabaseServerClient();
+    const query = supabase.from("users").delete().eq("id", userId);
+    return executeQuery(query);
+  },
+
   async updateStatus(userId: string, isActive: boolean): Promise<User[]> {
     const supabase = await getSupabaseServerClient();
     const query = supabase.from("users").update({ is_active: isActive, updated_at: new Date().toISOString() }).eq("id", userId);
