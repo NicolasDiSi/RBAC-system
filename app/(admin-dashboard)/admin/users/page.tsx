@@ -28,10 +28,11 @@ export default async function AdminUsersPage() {
   const { data: roles } = await supabase.from("roles").select("id, name")
 
   const permissions = {
+    canCreate: await checkPermission("users.create"),
     canUpdate: await checkPermission("users.update"),
     canDelete: await checkPermission("users.delete"),
     canUpdatePassword: await checkPermission("users.update_password"),
-    canShare: await checkPermission("users.share_credentials"), // Assuming this permission exists
+    canShare: await checkPermission("users.share"), // Assuming this permission exists
   }
 
   return (
