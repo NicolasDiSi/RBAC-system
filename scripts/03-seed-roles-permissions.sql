@@ -34,7 +34,9 @@ INSERT INTO permissions (name, description, resource, action) VALUES
   ('users.activate', 'Activate or deactivate user accounts', 'users', 'activate'),
   ('users.assign_role', 'Assign roles to users', 'users', 'assign_role'),
   ('users.update_password', 'Update a user/s password', 'users', 'update_password'),
-  ('users.share', 'Share user credentials or access information', 'users', 'share')
+  ('users.share', 'Share user credentials or access information', 'users', 'share'),
+  ('users.generate_signup_code', 'Generate one-time signup codes for inactive users', 'users', 'generate_signup_code'),
+  ('users.generate_share_link', 'Generate secure, temporary login links for users', 'users', 'generate_share_link')
 ON CONFLICT (name) DO UPDATE SET
   description = EXCLUDED.description,
   resource = EXCLUDED.resource,

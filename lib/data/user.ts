@@ -77,3 +77,33 @@ export const UserDAO = {
     return executeQuery(query);
   }
 };
+
+  export async function getUserById(userId: string): Promise<User | null> {
+    const supabase = await getSupabaseServerClient()
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', userId)
+      .single()
+
+    if (error) {
+      console.error('Error fetching user by ID:', error)
+      return null
+    }
+    return data as User
+  }
+
+  export async function getUserByEmail(email: string): Promise<User | null> {
+    const supabase = await getSupabaseServerClient()
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('email', email)
+      .single()
+
+    if (error) {
+      console.error('Error fetching user by email:', error)
+      return null
+    }
+    return data as User
+  }

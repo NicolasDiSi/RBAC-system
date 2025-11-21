@@ -1,44 +1,29 @@
-
 import { NextResponse } from "next/server";
-import { getSupabaseServerClient } from "@/lib/services/supabase/server";
 import { checkPermission } from "@/lib/services/auth/permissions";
-import { randomBytes } from "crypto";
+import { createShareToken } from "@/app/actions/shareToken"; // Import the new action
 
 export async function POST(request: Request, { params }: { params: { id: string } }) {
   try {
-    const hasPermission = await checkPermission('users.share');
+    const hasPermission = await checkPermission('users.generate_share_link'); // Use the new permission
     if (!hasPermission) {
-      return NextResponse.json({ message: "Unauthorized" }, { status: 403 });
+      return NextResponse.json({ message: "Forbidden" }, { status: 403 });
     }
 
     const userId = params.id;
-    const { duration, region } = await request.json(); // duration in hours
+    // Expecting duration, region, and timezone from the request body
+    const { duration, region, timezone } = await request.json();
 
-    if (!duration || !region) {
-      return NextResponse.json({ message: "Duration and region are required" }, { status: 400 });
+    if (!duration) {
+      return NextResponse.json({ message: "Duration is required" }, { status: 400 });
     }
 
-    const supabase = await getSupabaseServerClient();
+    // Call the createShareToken action
+    const shareToken = await createShareToken(userId, duration, region, timezone);
 
-    // Generate a secure, URL-safe token
-    const token = randomBytes(32).toString('base64url');
-    const expires_at = new Date(Date.now() + duration * 60 * 60 * 1000).toISOString();
+    // Construct the share link using the generated token
+    const shareLink = `${process.env.NEXT_PUBLIC_BASE_URL}/share/${shareToken.token}`;
 
-    const { error } = await supabase.from("secure_shares").insert({
-      user_id: userId,
-      token,
-      expires_at,
-      region_scope: region,
-    });
-
-    if (error) {
-      console.error("Error creating share link:", error);
-      return NextResponse.json({ message: "Failed to create share link" }, { status: 500 });
-    }
-
-    const shareLink = `${process.env.NEXT_PUBLIC_BASE_URL}/share/${token}`;
-
-    return NextResponse.json({ shareLink });
+    return NextResponse.json({ shareLink }, { status: 201 });
 
   } catch (error) {
     console.error("Share link creation error:", error);

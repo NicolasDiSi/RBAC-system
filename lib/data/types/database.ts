@@ -115,3 +115,25 @@ export interface HistorialRelacionLaboral {
   created_at: string
   created_by: string | null
 }
+
+export type SignupCode = {
+  id: string;
+  code: string;
+  user_id: string;
+  expires_at: string; // ISO string
+  is_used: boolean;
+  created_at: string; // ISO string
+  updated_at: string; // ISO string
+};
+
+export type ShareToken = {
+  id: string;
+  token: string;
+  user_id: string;
+  expires_at: string; // ISO string
+  region_restriction: string | null;
+  timezone_restriction: string | null;
+  is_used: boolean;
+  created_at: string; // ISO string
+  updated_at: string; // ISO string
+};
