@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { countries } from '@/lib/data/countries'
 import { toast } from 'sonner'
+import { createShareToken } from '@/app/actions/shareToken'
 
 interface ShareCredentialsModalProps {
   isOpen: boolean
@@ -18,30 +19,27 @@ interface ShareCredentialsModalProps {
 }
 
 export function ShareCredentialsModal({ isOpen, onClose, userId }: ShareCredentialsModalProps) {
-  const [duration, setDuration] = useState(24) // Default to 24 hours
+  const [duration, setDuration] = useState('24h') // Default to 24 hours
   const [region, setRegion] = useState('US')
+  const [timezone, setTimezone] = useState(Intl.DateTimeFormat().resolvedOptions().timeZone); // Default to user's local timezone
   const [isLoading, setIsLoading] = useState(false)
   const [shareLink, setShareLink] = useState<string | null>(null)
 
   const handleGenerateLink = async () => {
-    setIsLoading(true)
-    setShareLink(null)
+    setIsLoading(true);
+    setShareLink(null);
 
-    const response = await fetch(`/api/admin/users/${userId}/share`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ duration, region }),
-    })
-
-    setIsLoading(false)
-
-    if (response.ok) {
-      const data = await response.json()
-      setShareLink(data.shareLink)
-    } else {
-      toast.error('Failed to generate share link.')
+    try {
+      const shareToken = await createShareToken(userId, duration, region, timezone);
+      const link = `${window.location.origin}/share/${shareToken.token}`;
+      setShareLink(link);
+    } catch (error) {
+      console.error('Failed to generate share link:', error);
+      toast.error('Failed to generate share link. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
-  }
+  };
 
   const copyToClipboard = () => {
     if (shareLink) {
@@ -63,13 +61,18 @@ export function ShareCredentialsModal({ isOpen, onClose, userId }: ShareCredenti
         {!shareLink ? (
           <div className="space-y-4 py-4">
             <Field>
-              <FieldLabel>Link Duration (hours)</FieldLabel>
-              <Input
-                type="number"
-                value={duration}
-                onChange={(e) => setDuration(parseInt(e.target.value, 10))}
-                min={1}
-              />
+              <FieldLabel>Link Duration</FieldLabel>
+              <Select value={duration} onValueChange={setDuration}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a duration" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1h">1 Hour</SelectItem>
+                  <SelectItem value="8h">8 Hours</SelectItem>
+                  <SelectItem value="24h">24 Hours</SelectItem>
+                  <SelectItem value="7d">7 Days</SelectItem>
+                </SelectContent>
+              </Select>
             </Field>
             <Field>
               <FieldLabel>Region Scope</FieldLabel>
@@ -85,6 +88,15 @@ export function ShareCredentialsModal({ isOpen, onClose, userId }: ShareCredenti
                   ))}
                 </SelectContent>
               </Select>
+            </Field>
+            <Field>
+              <FieldLabel>Timezone</FieldLabel>
+              <Input
+                type="text"
+                value={timezone}
+                onChange={(e) => setTimezone(e.target.value)}
+                placeholder="e.g., America/New_York"
+              />
             </Field>
           </div>
         ) : (

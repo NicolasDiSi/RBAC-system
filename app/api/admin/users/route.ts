@@ -32,7 +32,7 @@ export async function POST(request: Request) {
 
     // Generate a random password
     const password = randomBytes(16).toString('hex');
-    const hashedPassword = await hash(password, 10);
+    const hashedPassword = await hash(password, 12);
 
     const { data: newUser, error } = await supabase
       .from("users")

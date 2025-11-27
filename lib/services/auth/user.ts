@@ -1,7 +1,7 @@
 import 'server-only'
 import { cache } from 'react'
 import { getSessionFromCookie } from '@/lib/services/auth/session'
-import { getSupabaseServerClient } from '@/lib/services/supabase/server'
+import { getSupabaseServiceRoleClient } from '../supabase/server'
 
 /**
  * Retrieves the authenticated user's profile from the database.
@@ -13,7 +13,7 @@ export const getAuthenticatedUser = cache(async () => {
     return null
   }
 
-  const supabase = await getSupabaseServerClient()
+  const supabase = await getSupabaseServiceRoleClient()
 
   // Get user with role information
   const { data: user } = await supabase

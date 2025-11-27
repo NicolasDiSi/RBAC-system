@@ -1,8 +1,9 @@
-'use server'
+"use server";
 
 import { getSupabaseServerClient } from '@/lib/services/supabase/server'
 import { ShareToken } from '@/lib/data/types/database'
-import { webcrypto } from 'crypto'; // Import webcrypto for randomUUID
+import crypto from 'crypto';
+import { checkPermission } from '@/lib/services/auth/permissions';
 
 export async function createShareToken(
   userId: string,
@@ -10,6 +11,11 @@ export async function createShareToken(
   regionRestriction: string | null = null,
   timezoneRestriction: string | null = null
 ): Promise<ShareToken> {
+  const hasAccess = await checkPermission('users.generate_share_link');
+  if (!hasAccess) {
+    throw new Error('You do not have permission to create share tokens.');
+  }
+
   const supabase = await getSupabaseServerClient()
 
   // Calculate expires_at
@@ -31,7 +37,7 @@ export async function createShareToken(
       throw new Error('Invalid expiration duration unit. Use h or d.')
   }
 
-  const token = webcrypto.randomUUID(); // Generate a UUID for the token using webcrypto
+  const token = crypto.randomUUID(); // Generate a UUID for the token using webcrypto
 
   const { data, error } = await supabase
     .from('share_tokens')

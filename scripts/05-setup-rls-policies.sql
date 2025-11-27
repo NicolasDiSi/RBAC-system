@@ -1,8 +1,8 @@
 -- Enable RLS on all tables
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.employees ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.documents ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.projects ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.empleados ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.documentos ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.obras ENABLE ROW LEVEL SECURITY;
 
 -- Drop existing policies if they exist
 DROP POLICY IF EXISTS "Allow all access to admin" ON public.users;
@@ -12,27 +12,27 @@ DROP POLICY IF EXISTS "Allow insert access to users with permission" ON public.u
 DROP POLICY IF EXISTS "Allow update access to users with permission" ON public.users;
 DROP POLICY IF EXISTS "Allow delete access to users with permission" ON public.users;
 
-DROP POLICY IF EXISTS "Allow all access to admin" ON public.employees;
-DROP POLICY IF EXISTS "Allow read access to users with permission" ON public.employees;
-DROP POLICY IF EXISTS "Allow insert access to users with permission" ON public.employees;
-DROP POLICY IF EXISTS "Allow update access to users with permission" ON public.employees;
-DROP POLICY IF EXISTS "Allow delete access to users with permission" ON public.employees;
+DROP POLICY IF EXISTS "Allow all access to admin" ON public.empleados;
+DROP POLICY IF EXISTS "Allow read access to users with permission" ON public.empleados;
+DROP POLICY IF EXISTS "Allow insert access to users with permission" ON public.empleados;
+DROP POLICY IF EXISTS "Allow update access to users with permission" ON public.empleados;
+DROP POLICY IF EXISTS "Allow delete access to users with permission" ON public.empleados;
 
-DROP POLICY IF EXISTS "Allow all access to admin" ON public.documents;
-DROP POLICY IF EXISTS "Allow read access to users with permission" ON public.documents;
-DROP POLICY IF EXISTS "Allow insert access to users with permission" ON public.documents;
-DROP POLICY IF EXISTS "Allow update access to users with permission" ON public.documents;
-DROP POLICY IF EXISTS "Allow delete access to users with permission" ON public.documents;
+DROP POLICY IF EXISTS "Allow all access to admin" ON public.documentos;
+DROP POLICY IF EXISTS "Allow read access to users with permission" ON public.documentos;
+DROP POLICY IF EXISTS "Allow insert access to users with permission" ON public.documentos;
+DROP POLICY IF EXISTS "Allow update access to users with permission" ON public.documentos;
+DROP POLICY IF EXISTS "Allow delete access to users with permission" ON public.documentos;
 
-DROP POLICY IF EXISTS "Allow all access to admin" ON public.projects;
-DROP POLICY IF EXISTS "Allow read access to users with permission" ON public.projects;
-DROP POLICY IF EXISTS "Allow insert access to users with permission" ON public.projects;
-DROP POLICY IF EXISTS "Allow update access to users with permission" ON public.projects;
-DROP POLICY IF EXISTS "Allow delete access to users with permission" ON public.projects;
+DROP POLICY IF EXISTS "Allow all access to admin" ON public.obras;
+DROP POLICY IF EXISTS "Allow read access to users with permission" ON public.obras;
+DROP POLICY IF EXISTS "Allow insert access to users with permission" ON public.obras;
+DROP POLICY IF EXISTS "Allow update access to users with permission" ON public.obras;
+DROP POLICY IF EXISTS "Allow delete access to users with permission" ON public.obras;
 
 -- Create policies for the 'users' table
 CREATE POLICY "Allow individual access" ON public.users
-FOR SELECT USING (auth.uid() = id);
+FOR SELECT USING (get_current_user_id() = id);
 
 CREATE POLICY "Allow read access to users with permission" ON public.users
 FOR SELECT USING (check_permission('users:read'));
@@ -42,49 +42,49 @@ FOR INSERT WITH CHECK (check_permission('users:create'));
 
 CREATE POLICY "Allow update access to users with permission" ON public.users
 FOR UPDATE USING (
-  auth.uid() = id OR check_permission('users:update')
+  get_current_user_id() = id OR check_permission('users:update')
 );
 
 CREATE POLICY "Allow delete access to users with permission" ON public.users
 FOR DELETE USING (
-  auth.uid() <> id AND check_permission('users:delete')
+  get_current_user_id() <> id AND check_permission('users:delete')
 );
 
 -- Create policies for the 'employees' table
-CREATE POLICY "Allow read access to users with permission" ON public.employees
+CREATE POLICY "Allow read access to users with permission" ON public.empleados
 FOR SELECT USING (check_permission('employees:read'));
 
-CREATE POLICY "Allow insert access to users with permission" ON public.employees
+CREATE POLICY "Allow insert access to users with permission" ON public.empleados
 FOR INSERT WITH CHECK (check_permission('employees:create'));
 
-CREATE POLICY "Allow update access to users with permission" ON public.employees
+CREATE POLICY "Allow update access to users with permission" ON public.empleados
 FOR UPDATE USING (check_permission('employees:update'));
 
-CREATE POLICY "Allow delete access to users with permission" ON public.employees
+CREATE POLICY "Allow delete access to users with permission" ON public.empleados
 FOR DELETE USING (check_permission('employees:delete'));
 
 -- Create policies for the 'documents' table
-CREATE POLICY "Allow read access to users with permission" ON public.documents
+CREATE POLICY "Allow read access to users with permission" ON public.documentos
 FOR SELECT USING (check_permission('documents:read'));
 
-CREATE POLICY "Allow insert access to users with permission" ON public.documents
+CREATE POLICY "Allow insert access to users with permission" ON public.documentos
 FOR INSERT WITH CHECK (check_permission('documents:create'));
 
-CREATE POLICY "Allow update access to users with permission" ON public.documents
+CREATE POLICY "Allow update access to users with permission" ON public.documentos
 FOR UPDATE USING (check_permission('documents:update'));
 
-CREATE POLICY "Allow delete access to users with permission" ON public.documents
+CREATE POLICY "Allow delete access to users with permission" ON public.documentos
 FOR DELETE USING (check_permission('documents:delete'));
 
 -- Create policies for the 'projects' table
-CREATE POLICY "Allow read access to users with permission" ON public.projects
+CREATE POLICY "Allow read access to users with permission" ON public.obras
 FOR SELECT USING (check_permission('projects:read'));
 
-CREATE POLICY "Allow insert access to users with permission" ON public.projects
+CREATE POLICY "Allow insert access to users with permission" ON public.obras
 FOR INSERT WITH CHECK (check_permission('projects:create'));
 
-CREATE POLICY "Allow update access to users with permission" ON public.projects
+CREATE POLICY "Allow update access to users with permission" ON public.obras
 FOR UPDATE USING (check_permission('projects:update'));
 
-CREATE POLICY "Allow delete access to users with permission" ON public.projects
+CREATE POLICY "Allow delete access to users with permission" ON public.obras
 FOR DELETE USING (check_permission('projects:delete'));

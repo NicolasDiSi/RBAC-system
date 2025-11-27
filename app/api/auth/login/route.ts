@@ -1,7 +1,7 @@
 
 import { NextResponse } from "next/server";
 import { compare } from "bcrypt";
-import { getSupabaseServerClient } from "@/lib/services/supabase/server";
+import { getSupabaseServiceRoleClient } from "@/lib/services/supabase/server";
 import { createSession } from "@/lib/services/auth/session";
 
 export async function POST(request: Request) {
@@ -12,13 +12,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: "Email and password are required" }, { status: 400 });
     }
 
-    const supabase = await getSupabaseServerClient();
+    const supabase = getSupabaseServiceRoleClient();
 
-    const { data: user } = await supabase
+    const { data: user, error } = await supabase
       .from("users")
       .select("*")
       .eq("email", email)
       .single();
+
+
+    if (error) {
+      console.error("Error fetching credentials", error);
+    }
 
     if (!user) {
       return NextResponse.json({ message: "Invalid credentials" }, { status: 401 });

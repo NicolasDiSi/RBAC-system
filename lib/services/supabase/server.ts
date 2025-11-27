@@ -1,23 +1,66 @@
-import { createServerClient } from "@supabase/ssr"
-import { cookies } from "next/headers"
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import { getSessionFromCookie } from "@/lib/services/auth/session";
+import jwt from 'jsonwebtoken';
 
-export async function getSupabaseServerClient() {
-  const cookieStore = await cookies()
+// A simple, request-scoped cache for the Supabase client.
+let supabaseClient: SupabaseClient | null = null;
 
-  return createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
-    cookies: {
-      getAll() {
-        return cookieStore.getAll()
+export async function getSupabaseServerClient(): Promise<SupabaseClient> {
+  // If a client has already been created for this server-side request, reuse it.
+  if (supabaseClient) {
+    return supabaseClient;
+  }
+
+  const session = await getSessionFromCookie();
+  let supabaseAccessToken: string | undefined = undefined;
+
+  if (session) {
+    if (!process.env.SUPABASE_JWT_SECRET) {
+      throw new Error("SUPABASE_JWT_SECRET is not set in environment variables.");
+    }
+    
+    const payload = {
+      sub: session.userId,
+      role: 'authenticated',
+      email: session.email,
+      iat: Math.floor(Date.now() / 1000),
+      exp: Math.floor(Date.now() / 1000) + (60 * 5), // 5-minute expiration
+    };
+
+    supabaseAccessToken = jwt.sign(payload, process.env.SUPABASE_JWT_SECRET);
+  }
+
+  // Create a new client for this request.
+  supabaseClient = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      global: {
+        headers: {
+          // If we have a token, set the Authorization header.
+          ...(supabaseAccessToken && { Authorization: `Bearer ${supabaseAccessToken}` }),
+        },
       },
-      setAll(cookiesToSet) {
-        try {
-          cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
-        } catch {
-          // The `setAll` method was called from a Server Component.
-          // This can be ignored if you have middleware refreshing
-          // user sessions.
-        }
+    }
+  );
+
+  return supabaseClient;
+}
+
+export function getSupabaseServiceRoleClient() {
+  if (!process.env.SUPABASE_SERVICE_KEY) {
+    throw new Error("SUPABASE_SERVICE_KEY is not set in environment variables.");
+  }
+
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_KEY!,
+    {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+        detectSessionInUrl: false,
       },
-    },
-  })
+    }
+  );
 }

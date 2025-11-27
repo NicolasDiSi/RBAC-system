@@ -47,4 +47,4 @@ USING (TRUE);
 CREATE POLICY "Allow authenticated users to update their own signup codes"
 ON signup_codes FOR UPDATE
 TO authenticated
-USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+USING (get_current_user_id() = user_id) WITH CHECK (get_current_user_id() = user_id);

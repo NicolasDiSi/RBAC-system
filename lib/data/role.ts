@@ -5,8 +5,32 @@ import { Role } from "./types/database";
 export const RoleDAO = {
   async getAll(): Promise<Role[]> {
     const supabase = await getSupabaseServerClient();
-    const query = supabase.from("roles").select("id, name");
+    const query = supabase.from("roles").select("id, name, description"); // Added description
     return executeQuery(query);
+  },
+
+  async getById(roleId: string): Promise<Role | null> {
+    const supabase = await getSupabaseServerClient();
+    const query = supabase.from("roles").select("*").eq("id", roleId).single();
+    return executeQuery(query);
+  },
+
+  async create(roleData: { name: string; description?: string }): Promise<Role> {
+    const supabase = await getSupabaseServerClient();
+    const query = supabase.from("roles").insert(roleData).select().single();
+    return executeQuery(query);
+  },
+
+  async update(roleId: string, roleData: { name?: string; description?: string }): Promise<Role> {
+    const supabase = await getSupabaseServerClient();
+    const query = supabase.from("roles").update(roleData).eq("id", roleId).select().single();
+    return executeQuery(query);
+  },
+
+  async delete(roleId: string): Promise<void> {
+    const supabase = await getSupabaseServerClient();
+    const query = supabase.from("roles").delete().eq("id", roleId);
+    await executeQuery(query);
   },
 
   async updatePermissions(roleId: string, permissionIds: string[]): Promise<void> {
@@ -25,5 +49,19 @@ export const RoleDAO = {
       const insertQuery = supabase.from("role_permissions").insert(rolePermissions);
       await executeQuery(insertQuery);
     }
-  }
+  },
+
+  async getPermissions(roleId: string): Promise<string[]> {
+    const supabase = await getSupabaseServerClient();
+    const { data, error } = await supabase
+      .from("role_permissions")
+      .select("permission_id")
+      .eq("role_id", roleId);
+
+    if (error) {
+      console.error("Error fetching role permissions:", error);
+      return [];
+    }
+    return data.map((rp) => rp.permission_id);
+  },
 };

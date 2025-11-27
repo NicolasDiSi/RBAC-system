@@ -27,11 +27,27 @@ CREATE INDEX IF NOT EXISTS idx_share_tokens_user_id ON share_tokens (user_id);
 -- Add RLS policy for share_tokens table
 ALTER TABLE share_tokens ENABLE ROW LEVEL SECURITY;
 
--- Policy: Allow service role to manage all share tokens
-CREATE POLICY "Allow service role to manage share tokens"
-ON share_tokens FOR ALL
-TO service_role
-USING (TRUE) WITH CHECK (TRUE);
+DROP POLICY IF EXISTS "Allow service role to manage share tokens" ON public.share_tokens;
+DROP POLICY IF EXISTS "Allow Super Admin to manage all share tokens" ON public.share_tokens;
+
+-- Policy: Allow Super Admin to manage all share tokens
+CREATE POLICY "Allow Super Admin to manage all share tokens" ON public.share_tokens
+FOR ALL USING (
+  EXISTS (
+    SELECT 1
+    FROM public.users
+    WHERE id = get_current_user_id()
+      AND role_id = '00000000-0000-0000-0000-000000000001' -- Super Admin role ID
+  )
+)
+WITH CHECK (
+  EXISTS (
+    SELECT 1
+    FROM public.users
+    WHERE id = get_current_user_id()
+      AND role_id = '00000000-0000-0000-0000-000000000001' -- Super Admin role ID
+  )
+);
 
 -- Policy: Allow anonymous users to read tokens for verification (read only)
 CREATE POLICY "Allow anonymous users to read share tokens"
@@ -43,4 +59,4 @@ USING (TRUE);
 CREATE POLICY "Allow authenticated users to update their own share tokens"
 ON share_tokens FOR UPDATE
 TO authenticated
-USING (auth.uid() = user_id);
+USING (get_current_user_id() = user_id);

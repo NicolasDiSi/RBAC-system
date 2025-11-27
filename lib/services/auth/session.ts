@@ -2,7 +2,6 @@ import 'server-only';
 import { cookies, headers } from 'next/headers';
 import { NextRequest } from 'next/server';
 import redis from '@/lib/services/redis';
-import { getUserById } from '@/lib/data/user'; // New import
 
 const COOKIE_NAME = 'app_session';
 const SESSION_DURATION_SECONDS = 60 * 60 * 24 * 7; // 7 days
@@ -49,17 +48,7 @@ export async function createSession(userId: string, email: string, roleId: strin
   });
 }
 
-/**
- * Creates a session for a user identified by userId, typically used after share token verification.
- * Fetches user details to populate the session payload.
- */
-export async function createSessionForShareToken(userId: string) {
-  const user = await getUserById(userId);
-  if (!user) {
-    throw new Error('User not found for session creation.');
-  }
-  await createSession(user.id, user.email, user.role_id);
-}
+
 
 /**
  * Retrieves the session payload from Redis based on the session ID from the cookie.

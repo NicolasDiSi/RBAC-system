@@ -6,7 +6,7 @@ import { hash } from 'bcrypt'
 export async function updateUserPassword(userId: string, newPasswordPlain: string): Promise<void> {
   const supabase = await getSupabaseServerClient()
 
-  const hashedPassword = await hash(newPasswordPlain, 10)
+  const hashedPassword = await hash(newPasswordPlain, 12)
 
   const { error } = await supabase
     .from('users')

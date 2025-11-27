@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getShareTokenByToken } from '@/lib/data/shareToken';
 import { markShareTokenAsUsed } from '@/app/actions/shareToken';
 import { getUserById } from '@/lib/data/user';
-import { createSessionForShareToken } from '@/lib/services/auth/session';
+import { createSession } from '@/lib/services/auth/session';
 
 export async function POST(request: Request) {
   try {
@@ -51,7 +51,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: 'Associated user not found or inactive' }, { status: 404 });
     }
 
-    await createSessionForShareToken(user.id);
+    await createSession(user.id, user.email, user.role_id);
 
     return NextResponse.json({ message: 'Login successful', redirect: '/dashboard' }, { status: 200 });
 

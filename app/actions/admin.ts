@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache"
 import { deleteUserSessions } from "@/lib/services/auth/session"
 import { checkPermission } from "@/lib/services/auth/permissions"
 import { createUserSchema, editUserSchema } from "@/lib/validations/user-schema"
+import { createRoleSchema, editRoleSchema } from "@/lib/validations/role-schema" // New import
 import { UserDAO } from "@/lib/data/user"
 import { RoleDAO } from "@/lib/data/role"
 
@@ -101,6 +102,53 @@ export async function getRoles() {
   }
 
   return RoleDAO.getAll()
+}
+
+export async function createRole(formData: FormData) {
+  const hasPermission = await checkPermission("roles.create")
+  if (!hasPermission) {
+    throw new Error("Unauthorized")
+  }
+
+  const formObject = Object.fromEntries(formData.entries());
+  const validatedFields = createRoleSchema.safeParse(formObject);
+
+  if (!validatedFields.success) {
+    throw new Error("Invalid role data.")
+  }
+
+  await RoleDAO.create(validatedFields.data)
+
+  revalidatePath("/admin/roles")
+}
+
+export async function updateRole(roleId: string, formData: FormData) {
+  const hasPermission = await checkPermission("roles.update")
+  if (!hasPermission) {
+    throw new Error("Unauthorized")
+  }
+
+  const formObject = Object.fromEntries(formData.entries());
+  const validatedFields = editRoleSchema.safeParse(formObject);
+
+  if (!validatedFields.success) {
+    throw new Error("Invalid role data.")
+  }
+
+  await RoleDAO.update(roleId, validatedFields.data)
+
+  revalidatePath("/admin/roles")
+}
+
+export async function deleteRole(roleId: string) {
+  const hasPermission = await checkPermission("roles.delete")
+  if (!hasPermission) {
+    throw new Error("Unauthorized")
+  }
+
+  await RoleDAO.delete(roleId)
+
+  revalidatePath("/admin/roles")
 }
 
 export async function updateUserPassword(userId: string, formData: FormData) {
