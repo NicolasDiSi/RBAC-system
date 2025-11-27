@@ -22,35 +22,33 @@ EXCEPTION
   WHEN others THEN
     RETURN NULL;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- ============================================================================
--- FUNCTION: set_config(key TEXT, value TEXT)
--- Description: A legacy wrapper for set_config. Not used by the JWT RLS system.
--- ============================================================================
-CREATE OR REPLACE FUNCTION set_config(key TEXT, value TEXT)
-RETURNS VOID AS $$
-BEGIN
-  -- The 'false' argument means the setting is transaction-local.
-  PERFORM set_config(key, value, false);
-END;
-$$ LANGUAGE plpgsql;
-
+-- Set a secure search path for the function to prevent hijacking
+ALTER FUNCTION public.get_current_user_id() SET search_path = public;
 
 -- ============================================================================
 -- FUNCTION: check_permission(permission_name TEXT)
 -- Description: Checks if the currently authenticated user has a specific
--- permission based on their role. Runs as SECURITY DEFINER to bypass RLS
--- on the internal query to the 'users' table.
+-- permission based on their role. Uses an RLS bypass to query the users table.
 -- ============================================================================
 CREATE OR REPLACE FUNCTION check_permission(permission_name TEXT)
 RETURNS BOOLEAN AS $$
 DECLARE
+  user_role_name TEXT;
   user_role_id UUID;
   has_permission BOOLEAN;
 BEGIN
-  -- Get the role_id of the currently authenticated user
-  SELECT role_id INTO user_role_id FROM public.users WHERE id = get_current_user_id();
+  -- Get the role name directly from the JWT 'role' claim.
+  -- This is now reliable because we fixed the JWT creation process.
+  user_role_name := auth.jwt()->>'role';
+
+  IF user_role_name IS NULL THEN
+    RETURN FALSE;
+  END IF;
+
+  -- Find the role_id from the role name
+  SELECT id INTO user_role_id FROM public.roles WHERE name = user_role_name;
 
   IF user_role_id IS NULL THEN
     RETURN FALSE;
@@ -64,7 +62,7 @@ BEGIN
     WHERE rp.role_id = user_role_id AND p.name = permission_name
   ) INTO has_permission;
 
-  RETURN has_permission;
+  RETURN COALESCE(has_permission, FALSE);
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 

@@ -1,6 +1,6 @@
 import { enforceAuthentication } from "@/lib/services/auth/protection";
 import { checkPermission } from "@/lib/services/auth/permissions";
-import { getSupabaseServerClient } from "@/lib/services/supabase/server";
+import { RoleDAO } from "@/lib/data/role";
 import { RolesTable } from "@/components/admin/roles-table";
 import { redirect } from "next/navigation";
 
@@ -12,21 +12,9 @@ export default async function AdminRolesPage() {
     redirect("/unauthorized");
   }
 
-  const supabase = await getSupabaseServerClient();
-
-  // Fetch all roles with permission counts
-  const { data: roles } = await supabase
-    .from("roles")
-    .select(
-      `
-      *,
-      role_permissions(count)
-    `
-    )
-    .order("name");
-
-  // Fetch all permissions grouped by resource
-  const { data: permissions } = await supabase.from("permissions").select("*").order("resource, action");
+  // Fetch all roles and permissions using the DAO
+  const roles = await RoleDAO.getAllWithPermissionCount();
+  const permissions = await RoleDAO.getAllPermissions();
 
   return (
       <div className="space-y-6">

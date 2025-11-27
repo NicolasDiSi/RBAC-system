@@ -1,9 +1,9 @@
 import { cache } from 'react'
-import { getSupabaseServerClient } from "@/lib/services/supabase/server"
+import { getSupabaseServiceRoleClient } from '../supabase/server'
 import { getAuthenticatedUser } from "./user"
 
 export const getUserPermissions = cache(async (roleId: string | null) => {
-  const supabase = await getSupabaseServerClient()
+  const supabase = await getSupabaseServiceRoleClient()
 
   // If the user has no role, they have no permissions.
   if (!roleId) {

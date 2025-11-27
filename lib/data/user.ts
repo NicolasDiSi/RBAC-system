@@ -1,4 +1,4 @@
-import { getSupabaseServerClient } from "@/lib/services/supabase/server";
+import { getSupabaseServiceRoleClient } from "@/lib/services/supabase/server";
 import { executeQuery } from "./query";
 import { hash } from "bcrypt";
 import { User } from "./types/database";
@@ -8,13 +8,13 @@ export type UserInput = Omit<Partial<User>, 'id' | 'created_at' | 'updated_at'>;
 
 export const UserDAO = {
   async getAll(): Promise<User[]> {
-    const supabase = await getSupabaseServerClient();
+    const supabase = await getSupabaseServiceRoleClient();
     const query = supabase
       .from("users")
       .select(`
         id,
         email,
-        full_name,
+        name,
         avatar_url,
         is_active,
         role_id,
@@ -28,7 +28,7 @@ export const UserDAO = {
   },
 
   async create(userData: UserInput): Promise<User[]> {
-    const supabase = await getSupabaseServerClient();
+    const supabase = await getSupabaseServiceRoleClient();
     const { password, ...rest } = userData;
     if (!password) throw new Error("Password is required for new users.");
     
@@ -38,7 +38,7 @@ export const UserDAO = {
   },
 
   async update(userId: string, userData: UserInput): Promise<User[]> {
-    const supabase = await getSupabaseServerClient();
+    const supabase = await getSupabaseServiceRoleClient();
     const { password, ...rest } = userData;
 
     if (password) {
@@ -52,26 +52,26 @@ export const UserDAO = {
   },
 
   async delete(userId: string): Promise<User[]> {
-    const supabase = await getSupabaseServerClient();
+    const supabase = await getSupabaseServiceRoleClient();
     const query = supabase.from("users").delete().eq("id", userId);
     return executeQuery(query);
   },
 
   async updateStatus(userId: string, isActive: boolean): Promise<User[]> {
-    const supabase = await getSupabaseServerClient();
+    const supabase = await getSupabaseServiceRoleClient();
     const query = supabase.from("users").update({ is_active: isActive, updated_at: new Date().toISOString() }).eq("id", userId);
     return executeQuery(query);
   },
 
   async updateRole(userId: string, roleId: string | null): Promise<User[]> {
-    const supabase = await getSupabaseServerClient();
+    const supabase = await getSupabaseServiceRoleClient();
     const updateData = { role_id: roleId };
     const query = supabase.from("users").update({ ...updateData, updated_at: new Date().toISOString() }).eq("id", userId);
     return executeQuery(query);
   },
 
   async updatePassword(userId: string, newPassword: string): Promise<User[]> {
-    const supabase = await getSupabaseServerClient();
+    const supabase = await getSupabaseServiceRoleClient();
     const hashedPassword = await hash(newPassword, 12);
     const query = supabase.from("users").update({ hashed_password: hashedPassword, updated_at: new Date().toISOString() }).eq("id", userId);
     return executeQuery(query);
@@ -79,7 +79,7 @@ export const UserDAO = {
 };
 
   export async function getUserById(userId: string): Promise<User | null> {
-    const supabase = await getSupabaseServerClient()
+    const supabase = await getSupabaseServiceRoleClient()
     const { data, error } = await supabase
       .from('users')
       .select('*')
@@ -94,7 +94,7 @@ export const UserDAO = {
   }
 
   export async function getUserByEmail(email: string): Promise<User | null> {
-    const supabase = await getSupabaseServerClient()
+    const supabase = await getSupabaseServiceRoleClient()
     const { data, error } = await supabase
       .from('users')
       .select('*')

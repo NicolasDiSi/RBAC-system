@@ -1,10 +1,10 @@
-import { getSupabaseServerClient } from '@/lib/services/supabase/server'
+import { getSupabaseServiceRoleClient } from '@/lib/services/supabase/server'
 import { SignupCode } from '@/lib/data/types/database'
 import { executeQuery } from './query' // Added executeQuery import
 
 export const SignupCodeDAO = {
   async getByCode(code: string): Promise<SignupCode | null> {
-    const supabase = await getSupabaseServerClient()
+    const supabase = await getSupabaseServiceRoleClient()
     const query = supabase
       .from('signup_codes')
       .select('*')
@@ -14,7 +14,7 @@ export const SignupCodeDAO = {
   },
 
   async getByUserId(userId: string): Promise<SignupCode | null> {
-    const supabase = await getSupabaseServerClient()
+    const supabase = await getSupabaseServiceRoleClient()
     const query = supabase
       .from('signup_codes')
       .select('*')
@@ -24,7 +24,7 @@ export const SignupCodeDAO = {
   },
 
   async getAll(): Promise<SignupCode[]> {
-    const supabase = await getSupabaseServerClient()
+    const supabase = await getSupabaseServiceRoleClient()
     const query = supabase
       .from('signup_codes')
       .select('*')
@@ -33,7 +33,7 @@ export const SignupCodeDAO = {
   },
 
   async create(signupCodeData: { user_id: string; code: string; expires_at: string }): Promise<SignupCode> {
-    const supabase = await getSupabaseServerClient()
+    const supabase = await getSupabaseServiceRoleClient()
     const query = supabase
       .from('signup_codes')
       .insert(signupCodeData)
@@ -43,7 +43,7 @@ export const SignupCodeDAO = {
   },
 
   async delete(id: string): Promise<void> {
-    const supabase = await getSupabaseServerClient()
+    const supabase = await getSupabaseServiceRoleClient()
     const query = supabase
       .from('signup_codes')
       .delete()
@@ -52,7 +52,7 @@ export const SignupCodeDAO = {
   },
 
   async markAsUsed(id: string): Promise<void> {
-    const supabase = await getSupabaseServerClient()
+    const supabase = await getSupabaseServiceRoleClient()
     const query = supabase
       .from('signup_codes')
       .update({ is_used: true, used_at: new Date().toISOString() })
@@ -79,7 +79,7 @@ export async function deleteSignupCode(id: string): Promise<void> {
 }
 
 export async function createSignupCode(userId: string, expirationDuration: number): Promise<SignupCode> {
-  const supabase = await getSupabaseServerClient()
+  const supabase = await getSupabaseServiceRoleClient()
   const code = Math.random().toString(36).substring(2, 10).toUpperCase() // Simple random code
   const expiresAt = new Date(Date.now() + expirationDuration * 60 * 1000).toISOString() // duration in minutes
 

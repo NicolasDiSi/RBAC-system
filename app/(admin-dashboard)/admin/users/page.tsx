@@ -1,6 +1,7 @@
 import { enforceAuthentication } from "@/lib/services/auth/protection";
 import { checkPermission } from "@/lib/services/auth/permissions";
-import { getSupabaseServerClient } from "@/lib/services/supabase/server";
+import { UserDAO } from "@/lib/data/user";
+import { RoleDAO } from "@/lib/data/role";
 import { UsersTable } from "@/components/admin/users-table";
 import { redirect } from "next/navigation";
 
@@ -12,20 +13,9 @@ export default async function AdminUsersPage() {
     redirect("/unauthorized");
   }
 
-  const supabase = await getSupabaseServerClient();
-
-  // Fetch all users with their roles
-  const { data: users } = await supabase
-    .from("users")
-    .select(
-      `
-      *,
-      role:roles(*)
-    `
-    )
-    .order("created_at", { ascending: false });
-
-  const { data: roles } = await supabase.from("roles").select("id, name")
+  // Fetch all users and roles using the respective DAOs
+  const users = await UserDAO.getAll();
+  const roles = await RoleDAO.getAll();
 
   const permissions = {
     canCreate: await checkPermission("users.create"),

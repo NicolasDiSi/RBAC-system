@@ -6,8 +6,7 @@ ALTER TABLE public.obras ENABLE ROW LEVEL SECURITY;
 
 -- Drop existing policies if they exist
 DROP POLICY IF EXISTS "Allow all access to admin" ON public.users;
-DROP POLICY IF EXISTS "Allow individual access" ON public.users;
-DROP POLICY IF EXISTS "Allow read access to users with permission" ON public.users;
+DROP POLICY IF EXISTS "Allow user select access" ON public.users;
 DROP POLICY IF EXISTS "Allow insert access to users with permission" ON public.users;
 DROP POLICY IF EXISTS "Allow update access to users with permission" ON public.users;
 DROP POLICY IF EXISTS "Allow delete access to users with permission" ON public.users;
@@ -31,11 +30,10 @@ DROP POLICY IF EXISTS "Allow update access to users with permission" ON public.o
 DROP POLICY IF EXISTS "Allow delete access to users with permission" ON public.obras;
 
 -- Create policies for the 'users' table
-CREATE POLICY "Allow individual access" ON public.users
-FOR SELECT USING (get_current_user_id() = id);
-
-CREATE POLICY "Allow read access to users with permission" ON public.users
-FOR SELECT USING (check_permission('users:read'));
+CREATE POLICY "Allow user select access" ON public.users
+FOR SELECT USING (
+  check_permission('users:read') AND id <> get_current_user_id()
+);
 
 CREATE POLICY "Allow insert access to users with permission" ON public.users
 FOR INSERT WITH CHECK (check_permission('users:create'));

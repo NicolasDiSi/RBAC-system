@@ -1,8 +1,8 @@
-import { getSupabaseServerClient } from '@/lib/services/supabase/server'
+import { getSupabaseServiceRoleClient } from '@/lib/services/supabase/server'
 import { ShareToken } from '@/lib/data/types/database'
 
 export async function getShareTokenByToken(token: string): Promise<ShareToken | null> {
-  const supabase = await getSupabaseServerClient()
+  const supabase = await getSupabaseServiceRoleClient()
   const { data, error } = await supabase
     .from('share_tokens')
     .select('*')

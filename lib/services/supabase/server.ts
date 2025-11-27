@@ -15,13 +15,28 @@ export async function getSupabaseServerClient(): Promise<SupabaseClient> {
   let supabaseAccessToken: string | undefined = undefined;
 
   if (session) {
+    // Use the service role client to get the user's real role from the database
+    const serviceClient = getSupabaseServiceRoleClient();
+    const { data: userData, error: userError } = await serviceClient
+      .from('users')
+      .select('role:roles(name)')
+      .eq('id', session.userId)
+      .single();
+
+    if (userError) {
+      throw new Error(`Failed to fetch user role: ${userError.message}`);
+    }
+
+    // Default to 'authenticated' if user has no specific role
+    const userRole = userData?.role?.name || 'authenticated';
+
     if (!process.env.SUPABASE_JWT_SECRET) {
       throw new Error("SUPABASE_JWT_SECRET is not set in environment variables.");
     }
     
     const payload = {
       sub: session.userId,
-      role: 'authenticated',
+      role: userRole,
       email: session.email,
       iat: Math.floor(Date.now() / 1000),
       exp: Math.floor(Date.now() / 1000) + (60 * 5), // 5-minute expiration
