@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache"
 import { getAuthenticatedUser } from "@/lib/services/auth/user"
 import { getSupabaseServerClient } from "@/lib/services/supabase/server"
 import { checkPermission } from "@/lib/services/auth/permissions"
+import { z } from "zod";
+import { createProjectSchema } from "@/lib/validations/project-schema"
 
 export async function createProject(data: any) {
   const user = await getAuthenticatedUser()
@@ -14,10 +16,28 @@ export async function createProject(data: any) {
 
   const supabase = await getSupabaseServerClient()
 
+  let validatedData;
+  try {
+    validatedData = createProjectSchema.parse(data);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      const fieldErrors: { [key: string]: string[] } = {};
+      error.errors.forEach((err) => {
+        const path = err.path.join('.');
+        if (!fieldErrors[path]) {
+          fieldErrors[path] = [];
+        }
+        fieldErrors[path].push(err.message);
+      });
+      return { success: false, message: "Validation failed.", errors: fieldErrors };
+    }
+    return { success: false, message: "An unknown validation error occurred." };
+  }
+
   const { data: project, error } = await supabase
     .from("obras")
     .insert({
-      ...data,
+      ...validatedData,
       created_by: user?.id,
     })
     .select()

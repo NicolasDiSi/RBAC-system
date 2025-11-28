@@ -13,29 +13,19 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { createProject } from "@/app/actions/projects"
-
-const formSchema = z.object({
-  nombre: z.string().min(2, { message: 'Project name must be at least 2 characters.' }),
-  codigo: z.string().optional(),
-  ubicacion: z.string().optional(),
-  fecha_inicio: z.string().optional(),
-  fecha_fin_estimada: z.string().optional(),
-  presupuesto: z.string().optional(),
-  descripcion: z.string().optional(),
-  estado: z.string().optional(),
-})
+import { createProjectSchema, CreateProjectFormValues } from '@/lib/validations/project-schema'
 
 export function ProjectForm() {
   const router = useRouter()
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+  const form = useForm<CreateProjectFormValues>({
+    resolver: zodResolver(createProjectSchema),
     defaultValues: {
       nombre: '',
       codigo: '',
       ubicacion: '',
       fecha_inicio: '',
       fecha_fin_estimada: '',
-      presupuesto: '',
+      presupuesto: undefined, // Should be undefined for optional numbers
       descripcion: '',
       estado: 'planificada',
     },
@@ -43,7 +33,7 @@ export function ProjectForm() {
 
   const { isSubmitting } = form.formState
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  const onSubmit = async (values: CreateProjectFormValues) => {
     try {
       await createProject(values)
       toast.success('Project created successfully!')

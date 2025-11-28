@@ -3,6 +3,7 @@ import { getSupabaseServerClient } from "@/lib/services/supabase/server"
 import { ProjectDetail } from "@/components/projects/project-detail"
 
 export default async function ProjectDetailPage({ params }: { params: { id: string } }) {
+  const { id } = params;
   const supabase = await getSupabaseServerClient()
 
   // Fetch project
@@ -19,7 +20,7 @@ export default async function ProjectDetailPage({ params }: { params: { id: stri
       *,
       empleado:empleados(*)
     `)
-    .eq("obra_id", params.id)
+    .eq("obra_id", id)
     .order("fecha_inicio", { ascending: false })
 
   // Fetch all employees for assignment form

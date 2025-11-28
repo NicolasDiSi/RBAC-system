@@ -3,10 +3,11 @@ import { getSupabaseServerClient } from "@/lib/services/supabase/server"
 import { EmployeeDetail } from "@/components/employees/employee-detail"
 
 export default async function EmployeeDetailPage({ params }: { params: { id: string } }) {
+  const employeeId = String(params.id);
   const supabase = await getSupabaseServerClient()
 
   // Fetch employee with related data
-  const { data: employee } = await supabase.from("empleados").select("*").eq("id", params.id).single()
+  const { data: employee } = await supabase.from("empleados").select("*").eq("id", employeeId).single()
 
   if (!employee) {
     notFound()
@@ -19,14 +20,14 @@ export default async function EmployeeDetailPage({ params }: { params: { id: str
       *,
       obra:obras(*)
     `)
-    .eq("empleado_id", params.id)
+    .eq("empleado_id", employeeId)
     .order("fecha_inicio", { ascending: false })
 
   // Fetch documents
   const { data: documents } = await supabase
     .from("documentos")
     .select("*")
-    .eq("empleado_id", params.id)
+    .eq("empleado_id", employeeId)
     .order("fecha_subida", { ascending: false })
 
   // Fetch history
@@ -36,7 +37,7 @@ export default async function EmployeeDetailPage({ params }: { params: { id: str
       *,
       obra:obras(nombre)
     `)
-    .eq("empleado_id", params.id)
+    .eq("empleado_id", employeeId)
     .order("fecha_evento", { ascending: false })
 
   return (
