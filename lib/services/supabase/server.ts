@@ -28,7 +28,10 @@ export async function getSupabaseServerClient(): Promise<SupabaseClient> {
     }
 
     // Default to 'authenticated' if user has no specific role
-    const userRole = userData?.role?.name || 'authenticated';
+    const userRole = userData?.role?.name;
+    if (!userRole) {
+      throw new Error("User does not have a role assigned.");
+    }
 
     if (!process.env.SUPABASE_JWT_SECRET) {
       throw new Error("SUPABASE_JWT_SECRET is not set in environment variables.");
@@ -36,10 +39,10 @@ export async function getSupabaseServerClient(): Promise<SupabaseClient> {
     
     const payload = {
       sub: session.userId,
-      role: userRole,
+      app_role: userRole,
       email: session.email,
       iat: Math.floor(Date.now() / 1000),
-      exp: Math.floor(Date.now() / 1000) + (60 * 5), // 5-minute expiration
+      exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60), // 24 hours expiration
     };
 
     supabaseAccessToken = jwt.sign(payload, process.env.SUPABASE_JWT_SECRET);

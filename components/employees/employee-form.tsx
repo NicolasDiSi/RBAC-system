@@ -13,25 +13,12 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { createEmployee } from "@/app/actions/employees"
-
-const formSchema = z.object({
-  nombre: z.string().min(2, { message: 'First name must be at least 2 characters.' }),
-  apellido: z.string().min(2, { message: 'Last name must be at least 2 characters.' }),
-  dni: z.string().min(8, { message: 'DNI must be at least 8 characters.' }),
-  fecha_nacimiento: z.string().optional(),
-  telefono: z.string().optional(),
-  email: z.string().email({ message: 'Invalid email address.' }).optional(),
-  direccion: z.string().optional(),
-  fecha_ingreso: z.string(),
-  tipo_contrato: z.string().optional(),
-  categoria: z.string().optional(),
-  observaciones: z.string().optional(),
-})
+import { employeeSchema } from '@/lib/validations/employee-schema'
 
 export function EmployeeForm() {
   const router = useRouter()
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+  const form = useForm<z.infer<typeof employeeSchema>>({
+    resolver: zodResolver(employeeSchema),
     defaultValues: {
       nombre: '',
       apellido: '',
@@ -49,7 +36,7 @@ export function EmployeeForm() {
 
   const { isSubmitting } = form.formState
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  const onSubmit = async (values: z.infer<typeof employeeSchema>) => {
     try {
       await createEmployee(values)
       toast.success('Employee created successfully!')
@@ -209,7 +196,7 @@ export function EmployeeForm() {
                 name="categoria"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Category</FormLabel>
+                    <FormLabel>Category *</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
