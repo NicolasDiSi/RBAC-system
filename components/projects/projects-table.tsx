@@ -74,7 +74,7 @@ export function ProjectsTable({ projects }: { projects: ProjectWithCount[] }) {
                   </Badge>
                 </TableCell>
                 <TableCell className="text-muted-foreground">
-                  {project.fecha_inicio ? new Date(project.fecha_inicio).toLocaleDateString() : "-"}
+                  {project.fecha_inicio || "-"}
                 </TableCell>
                 <TableCell>
                   <Badge variant="outline">{project.asignaciones_contratos[0]?.count || 0}</Badge>

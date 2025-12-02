@@ -132,7 +132,7 @@ export function ProjectDetail({ project, assignments, employees }: ProjectDetail
             <div>
               <p className="text-sm text-muted-foreground">Start Date</p>
               <p className="font-medium">
-                {project.fecha_inicio ? new Date(project.fecha_inicio).toLocaleDateString() : "-"}
+                {project.fecha_inicio || "-"}
               </p>
             </div>
             <div>

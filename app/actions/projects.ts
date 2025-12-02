@@ -6,6 +6,7 @@ import { getSupabaseServerClient } from "@/lib/services/supabase/server"
 import { checkPermission } from "@/lib/services/auth/permissions"
 import { z } from "zod";
 import { createProjectSchema } from "@/lib/validations/project-schema"
+import { createAssignmentSchema } from "@/lib/validations/assignment-schema"
 
 export async function createProject(data: any) {
   const user = await getAuthenticatedUser()
@@ -60,14 +61,32 @@ export async function createAssignment(data: any) {
 
   const supabase = await getSupabaseServerClient()
 
+  let validatedData;
+  try {
+    validatedData = createAssignmentSchema.parse(data);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      const fieldErrors: { [key: string]: string[] } = {};
+      error.errors.forEach((err) => {
+        const path = err.path.join('.');
+        if (!fieldErrors[path]) {
+          fieldErrors[path] = [];
+        }
+        fieldErrors[path].push(err.message);
+      });
+      return { success: false, message: "Validation failed.", errors: fieldErrors };
+    }
+    return { success: false, message: "An unknown validation error occurred." };
+  }
+
   // Get employee details for history
-  const { data: employee } = await supabase.from("empleados").select("*").eq("id", data.empleado_id).single()
+  const { data: employee } = await supabase.from("empleados").select("*").eq("id", validatedData.empleado_id).single()
 
   const { data: assignment, error } = await supabase
     .from("asignaciones_contratos")
     .insert({
-      ...data,
-      estado: "activo",
+      ...validatedData,
+      estado: validatedData.estado || "activo", // Use validatedData.estado if provided, otherwise default
       created_by: user?.id,
     })
     .select()
@@ -79,16 +98,16 @@ export async function createAssignment(data: any) {
 
   // Create history entry for assignment
   await supabase.from("historial_relacion_laboral").insert({
-    empleado_id: data.empleado_id,
-    fecha_evento: data.fecha_inicio,
+    empleado_id: validatedData.empleado_id,
+    fecha_evento: validatedData.fecha_inicio,
     tipo_evento: "cambio_obra",
-    descripcion: `Assigned to project with category ${data.categoria}`,
-    obra_id: data.obra_id,
-    categoria_nueva: data.categoria,
+    descripcion: `Assigned to project with category ${validatedData.categoria || "N/A"}`,
+    obra_id: validatedData.obra_id,
+    categoria_nueva: validatedData.categoria,
     created_by: user?.id,
   })
 
-  revalidatePath(`/projects/${data.obra_id}`)
-  revalidatePath(`/employees/${data.empleado_id}`)
+  revalidatePath(`/projects/${validatedData.obra_id}`)
+  revalidatePath(`/employees/${validatedData.empleado_id}`)
   return assignment
 }
