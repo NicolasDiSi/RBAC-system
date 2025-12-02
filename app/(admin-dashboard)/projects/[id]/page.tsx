@@ -1,6 +1,7 @@
 import { redirect, notFound } from "next/navigation"
 import { getSupabaseServerClient } from "@/lib/services/supabase/server"
 import { ProjectDetail } from "@/components/projects/project-detail"
+import { checkPermission } from "@/lib/services/auth/permissions";
 
 export default async function ProjectDetailPage({ params }: { params: { id: string } }) {
   const { id } = params;
@@ -25,8 +26,10 @@ export default async function ProjectDetailPage({ params }: { params: { id: stri
 
   // Fetch all employees for assignment form
   const { data: employees } = await supabase.from("empleados").select("*").eq("estado", "activo").order("apellido")
-
+  const permissions = {
+      canUpdate: await checkPermission("projects.update"),
+    };
   return (
-      <ProjectDetail project={project} assignments={assignments || []} employees={employees || []} />
+      <ProjectDetail permissions={permissions} project={project} assignments={assignments || []} employees={employees || []} />
   )
 }

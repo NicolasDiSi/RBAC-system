@@ -7,6 +7,7 @@ import { createUserSchema, editUserSchema } from "@/lib/validations/user-schema"
 import { createRoleSchema, editRoleSchema } from "@/lib/validations/role-schema" // New import
 import { UserDAO } from "@/lib/data/user"
 import { RoleDAO } from "@/lib/data/role"
+import { getSupabaseServerClient } from "@/lib/services/supabase/server"
 
 export async function createUser(formData: FormData) {
   const hasPermission = await checkPermission("users.create")

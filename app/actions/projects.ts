@@ -7,6 +7,7 @@ import { checkPermission } from "@/lib/services/auth/permissions"
 import { z } from "zod";
 import { createProjectSchema } from "@/lib/validations/project-schema"
 import { createAssignmentSchema } from "@/lib/validations/assignment-schema"
+import { endAssignmentSchema } from "@/lib/validations/end-assignment-schema"
 
 export async function createProject(data: any) {
   const user = await getAuthenticatedUser()
@@ -110,4 +111,43 @@ export async function createAssignment(data: any) {
   revalidatePath(`/projects/${validatedData.obra_id}`)
   revalidatePath(`/employees/${validatedData.empleado_id}`)
   return assignment
+}
+
+export async function endAssignment(data: { assignment_id: string, fecha_fin: string }) {
+  const user = await getAuthenticatedUser();
+  const hasPermission = await checkPermission("assignments.update");
+  if (!hasPermission) {
+    throw new Error("Unauthorized");
+  }
+
+  const supabase = await getSupabaseServerClient();
+
+  const validatedData = endAssignmentSchema.parse(data);
+
+  const { data: updatedAssignment, error } = await supabase
+    .from("asignaciones_contratos")
+    .update({ fecha_fin: validatedData.fecha_fin, estado: "finalizado" })
+    .eq("id", validatedData.assignment_id)
+    .select()
+    .single();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  if (updatedAssignment) {
+    await supabase.from("historial_relacion_laboral").insert({
+      empleado_id: updatedAssignment.empleado_id,
+      fecha_evento: validatedData.fecha_fin,
+      tipo_evento: "egreso",
+      descripcion: `Assignment ended for project`,
+      obra_id: updatedAssignment.obra_id,
+      created_by: user?.id,
+    });
+  }
+
+  revalidatePath(`/projects/${updatedAssignment.obra_id}`);
+  revalidatePath(`/employees/${updatedAssignment.empleado_id}`);
+
+  return updatedAssignment;
 }
