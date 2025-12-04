@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import Link from "next/link"
 import { useState } from "react"
-import { Eye } from "lucide-react"
+import { Eye, Edit, MoreHorizontal } from "lucide-react"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import type { Empleado } from "@/lib/data/types/database"
 
 export function EmployeesTable({ employees }: { employees: Empleado[] }) {
@@ -54,6 +55,7 @@ export function EmployeesTable({ employees }: { employees: Empleado[] }) {
               <TableHead>Category</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Start Date</TableHead>
+              <TableHead>End Date</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -76,13 +78,31 @@ export function EmployeesTable({ employees }: { employees: Empleado[] }) {
                 <TableCell className="text-muted-foreground">
                   {new Date(employee.fecha_ingreso).toLocaleDateString()}
                 </TableCell>
+                <TableCell className="text-muted-foreground">
+                  {employee.fecha_egreso ? new Date(employee.fecha_egreso).toLocaleDateString() : "-"}
+                </TableCell>
                 <TableCell className="text-right">
-                  <Link href={`/employees/${employee.id}`}>
-                    <Button variant="ghost" size="sm" className="gap-2">
-                      <Eye className="h-4 w-4" />
-                      View
-                    </Button>
-                  </Link>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      <Link href={`/employees/${employee.id}`} passHref>
+                        <DropdownMenuItem>
+                          <Eye className="h-4 w-4 mr-2" />
+                          View
+                        </DropdownMenuItem>
+                      </Link>
+                      <Link href={`/employees/${employee.id}/edit`} passHref>
+                        <DropdownMenuItem>
+                          <Edit className="h-4 w-4 mr-2" />
+                          Edit
+                        </DropdownMenuItem>
+                      </Link>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </TableCell>
               </TableRow>
             ))}

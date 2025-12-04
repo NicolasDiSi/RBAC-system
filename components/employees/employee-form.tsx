@@ -1,54 +1,82 @@
 'use client'
 
+import { useEffect, type FC } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
 import { toast } from 'sonner'
 
+import { createEmployee, updateEmployee } from '@/app/actions/employees'
+import { createEmployeeSchema, editEmployeeSchema, CreateEmployeeFormValues, EditEmployeeFormValues } from '@/lib/validations/employee-schema'
 import { Button } from '@/components/ui/button'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { createEmployee } from "@/app/actions/employees"
-import { employeeSchema } from '@/lib/validations/employee-schema'
+import type { Empleado } from '@/lib/data/types/database'
 
-export function EmployeeForm() {
+type EmployeeFormValues = CreateEmployeeFormValues | EditEmployeeFormValues
+
+interface EmployeeFormProps {
+  employee?: Empleado | null
+}
+
+export const EmployeeForm: FC<EmployeeFormProps> = ({ employee }) => {
   const router = useRouter()
-  const form = useForm<z.infer<typeof employeeSchema>>({
-    resolver: zodResolver(employeeSchema),
+  const isEditing = !!employee
+  const formSchema = isEditing ? editEmployeeSchema : createEmployeeSchema
+
+  const form = useForm<EmployeeFormValues>({
+    resolver: zodResolver(formSchema),
     defaultValues: {
       nombre: '',
       apellido: '',
       dni: '',
-      fecha_nacimiento: undefined,
+      fecha_nacimiento: '',
       telefono: '',
       email: '',
       direccion: '',
-      fecha_ingreso: undefined,
+      fecha_ingreso: '',
+      fecha_egreso: '',
       tipo_contrato: '',
       categoria: '',
       observaciones: '',
     },
   })
 
+  useEffect(() => {
+    if (employee) {
+      form.reset({
+        ...employee,
+        fecha_nacimiento: employee.fecha_nacimiento ? new Date(employee.fecha_nacimiento).toISOString().split('T')[0] : '',
+        fecha_ingreso: employee.fecha_ingreso ? new Date(employee.fecha_ingreso).toISOString().split('T')[0] : '',
+        fecha_egreso: employee.fecha_egreso ? new Date(employee.fecha_egreso).toISOString().split('T')[0] : '',
+      })
+    }
+  }, [employee, form])
+
   const { isSubmitting } = form.formState
 
-  const onSubmit = async (values: z.infer<typeof employeeSchema>) => {
+  const onSubmit = async (values: EmployeeFormValues) => {
     try {
-      await createEmployee(values)
-      toast.success('Employee created successfully!')
-      router.push('/employees')
+      if (isEditing && employee) {
+        await updateEmployee(employee.id, values as EditEmployeeFormValues)
+        toast.success('Employee updated successfully!')
+        router.push('/employees')
+      } else {
+        await createEmployee(values as CreateEmployeeFormValues)
+        toast.success('Employee created successfully!')
+        router.push('/employees')
+      }
     } catch (error) {
-      toast.error('Failed to create employee.')
+      toast.error('Failed to save employee.')
     }
   }
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <Card>
           <CardHeader>
             <CardTitle>Employee Information</CardTitle>
@@ -171,6 +199,19 @@ export function EmployeeForm() {
               />
               <FormField
                 control={form.control}
+                name="fecha_egreso"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>End Date</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
                 name="tipo_contrato"
                 render={({ field }) => (
                   <FormItem>
@@ -191,6 +232,7 @@ export function EmployeeForm() {
                   </FormItem>
                 )}
               />
+              </div>
               <FormField
                 control={form.control}
                 name="categoria"
@@ -214,7 +256,6 @@ export function EmployeeForm() {
                   </FormItem>
                 )}
               />
-            </div>
 
             <FormField
               control={form.control}
@@ -230,12 +271,12 @@ export function EmployeeForm() {
               )}
             />
 
-            <div className="flex gap-4">
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Creating..." : "Create Employee"}
-              </Button>
+            <div className="flex justify-end space-x-2 pt-4">
               <Button type="button" variant="outline" onClick={() => router.back()}>
                 Cancel
+              </Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? (isEditing ? 'Saving...' : 'Creating...') : (isEditing ? 'Save Changes' : 'Create Employee')}
               </Button>
             </div>
           </CardContent>

@@ -33,10 +33,12 @@ export function EmployeeDetail({ employee, assignments, documents, history }: Em
             <p className="text-muted-foreground">DNI: {employee.dni}</p>
           </div>
         </div>
-        <Button className="gap-2">
-          <Edit className="h-4 w-4" />
-          Edit
-        </Button>
+        <Link href={`/employees/${employee.id}/edit`} passHref>
+          <Button className="gap-2">
+            <Edit className="h-4 w-4" />
+            Edit
+          </Button>
+        </Link>
       </div>
 
       <div className="grid gap-6 md:grid-cols-3">
@@ -101,6 +103,12 @@ export function EmployeeDetail({ employee, assignments, documents, history }: Em
                 <div>
                   <p className="text-sm text-muted-foreground">Start Date</p>
                   <p className="font-medium">{new Date(employee.fecha_ingreso).toLocaleDateString()}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">End Date</p>
+                  <p className="font-medium">
+                    {employee.fecha_egreso ? new Date(employee.fecha_egreso).toLocaleDateString() : "-"}
+                  </p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Phone</p>
