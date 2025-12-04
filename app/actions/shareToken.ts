@@ -10,7 +10,7 @@ export async function createShareToken(
   expirationDuration: string, // e.g., '1h', '24h', '7d'
   regionRestriction: string | null = null,
   timezoneRestriction: string | null = null
-): Promise<ShareToken> {
+): Promise<{ token: string }> {
   const hasAccess = await checkPermission('users.generate_share_link');
   if (!hasAccess) {
     throw new Error('You do not have permission to create share tokens.');
@@ -37,18 +37,22 @@ export async function createShareToken(
       throw new Error('Invalid expiration duration unit. Use h or d.')
   }
 
-  const token = crypto.randomUUID(); // Generate a UUID for the token using webcrypto
+  // 1. Generate a secure, URL-safe, random token
+  const rawToken = crypto.randomBytes(32).toString('base64url');
+  
+  // 2. Hash the token for database storage
+  const hashedToken = crypto.createHash('sha256').update(rawToken).digest('hex');
 
   const { data, error } = await supabase
     .from('share_tokens')
     .insert({
       user_id: userId,
-      token: token,
+      token: hashedToken, // Store the hashed token
       expires_at: expiresAt.toISOString(),
       region_restriction: regionRestriction,
       timezone_restriction: timezoneRestriction,
     })
-    .select('*')
+    .select('id') // Only select what's necessary
     .single()
 
   if (error) {
@@ -56,19 +60,6 @@ export async function createShareToken(
     throw new Error('Failed to create share token.')
   }
 
-  return data as ShareToken
-}
-
-export async function markShareTokenAsUsed(tokenId: string): Promise<void> {
-  const supabase = await getSupabaseServerClient()
-
-  const { error } = await supabase
-    .from('share_tokens')
-    .update({ is_used: true, updated_at: new Date().toISOString() })
-    .eq('id', tokenId)
-
-  if (error) {
-    console.error('Error marking share token as used:', error)
-    throw new Error('Failed to mark share token as used.')
-  }
+  // 3. Return the raw token for the share link, not the database object
+  return { token: rawToken };
 }

@@ -30,8 +30,9 @@ export function ShareCredentialsModal({ isOpen, onClose, userId }: ShareCredenti
     setShareLink(null);
 
     try {
-      const shareToken = await createShareToken(userId, duration, region, timezone);
-      const link = `${window.location.origin}/share/${shareToken.token}`;
+      // The action now returns an object with the raw token: { token: string }
+      const { token } = await createShareToken(userId, duration, region, timezone);
+      const link = `${window.location.origin}/share/${token}`;
       setShareLink(link);
     } catch (error) {
       console.error('Failed to generate share link:', error);
