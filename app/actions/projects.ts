@@ -205,3 +205,29 @@ export async function updateAssignment(assignmentId: string, data: any) {
 
   return updatedAssignment;
 }
+
+export async function updateProject(projectId: string, data: any) {
+  const hasPermission = await checkPermission("projects.update");
+  if (!hasPermission) {
+    throw new Error("Unauthorized");
+  }
+
+  const supabase = await getSupabaseServerClient();
+  const validatedData = createProjectSchema.parse(data);
+
+  const { data: updatedProject, error } = await supabase
+    .from("obras")
+    .update(validatedData)
+    .eq("id", projectId)
+    .select()
+    .single();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath("/projects");
+  revalidatePath(`/projects/${updatedProject.id}`);
+
+  return updatedProject;
+}

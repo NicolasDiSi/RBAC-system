@@ -4,7 +4,8 @@ import { EmployeeDetail } from "@/components/employees/employee-detail"
 import { checkPermission } from "@/lib/services/auth/permissions"
 
 export default async function EmployeeDetailPage({ params }: { params: { id: string } }) {
-  const employeeId = String(params.id);
+  const id = params.id;
+  const employeeId = String(id);
   const supabase = await getSupabaseServerClient()
 
   const permissions = {

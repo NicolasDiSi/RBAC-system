@@ -132,7 +132,7 @@ export const EmployeeForm: FC<EmployeeFormProps> = ({ employee }) => {
 									<FormItem>
 										<FormLabel>Date of Birth</FormLabel>
 										<FormControl>
-											<Input type="date" {...field} />
+											<Input type="date" {...field} value={field.value ?? ''} />
 										</FormControl>
 										<FormMessage />
 									</FormItem>
@@ -148,7 +148,7 @@ export const EmployeeForm: FC<EmployeeFormProps> = ({ employee }) => {
 									<FormItem>
 										<FormLabel>Phone</FormLabel>
 										<FormControl>
-											<Input type="tel" {...field} />
+											<Input type="tel" {...field} value={field.value ?? ''} />
 										</FormControl>
 										<FormMessage />
 									</FormItem>
@@ -161,7 +161,7 @@ export const EmployeeForm: FC<EmployeeFormProps> = ({ employee }) => {
 									<FormItem>
 										<FormLabel>Email</FormLabel>
 										<FormControl>
-											<Input type="email" {...field} />
+											<Input type="email" {...field} value={field.value ?? ''} />
 										</FormControl>
 										<FormMessage />
 									</FormItem>
@@ -176,7 +176,7 @@ export const EmployeeForm: FC<EmployeeFormProps> = ({ employee }) => {
 								<FormItem>
 									<FormLabel>Address</FormLabel>
 									<FormControl>
-										<Input {...field} />
+										<Input {...field} value={field.value ?? ''} />
 									</FormControl>
 									<FormMessage />
 								</FormItem>
@@ -204,7 +204,7 @@ export const EmployeeForm: FC<EmployeeFormProps> = ({ employee }) => {
 									<FormItem>
 										<FormLabel>End Date</FormLabel>
 										<FormControl>
-											<Input type="date" {...field} />
+											<Input type="date" {...field} value={field.value ?? ''} />
 										</FormControl>
 										<FormMessage />
 									</FormItem>
@@ -217,7 +217,7 @@ export const EmployeeForm: FC<EmployeeFormProps> = ({ employee }) => {
 									<FormItem>
 										<FormLabel>Contract Type</FormLabel>
 										<FormControl>
-											<Select onValueChange={field.onChange} value={field.value}>
+											<Select onValueChange={field.onChange} value={field.value ?? ''}>
 												<SelectTrigger>
 													<SelectValue placeholder="Select type" />
 												</SelectTrigger>
@@ -240,7 +240,7 @@ export const EmployeeForm: FC<EmployeeFormProps> = ({ employee }) => {
 								<FormItem>
 									<FormLabel>Category *</FormLabel>
 									<FormControl>
-										<Select onValueChange={field.onChange} value={field.value}>
+										<Select onValueChange={field.onChange} value={field.value ?? ''}>
 											<SelectTrigger>
 												<SelectValue placeholder={`Select category`} />
 											</SelectTrigger>
@@ -264,7 +264,7 @@ export const EmployeeForm: FC<EmployeeFormProps> = ({ employee }) => {
 								<FormItem>
 									<FormLabel>Notes</FormLabel>
 									<FormControl>
-										<Textarea rows={3} {...field} />
+										<Textarea rows={3} {...field} value={field.value ?? ''} />
 									</FormControl>
 									<FormMessage />
 								</FormItem>

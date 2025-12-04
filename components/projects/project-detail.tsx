@@ -130,10 +130,12 @@ export function ProjectDetail({ project, assignments, employees, permissions }: 
 						</p>
 					</div>
 				</div>
-				<Button className="gap-2">
-					<Edit className="h-4 w-4" />
-					Edit
-				</Button>
+				<Link href={`/projects/${project.id}/edit`} passHref>
+					<Button className="gap-2">
+						<Edit className="h-4 w-4" />
+						Edit
+					</Button>
+				</Link>
 			</div>
 
 			<div className="grid gap-6 md:grid-cols-4">
@@ -188,15 +190,13 @@ export function ProjectDetail({ project, assignments, employees, permissions }: 
 						<div>
 							<p className="text-sm text-muted-foreground">Estimated End Date</p>
 							<p className="font-medium">
-								{project.fecha_fin_estimada
-									? new Date(project.fecha_fin_estimada).toLocaleDateString()
-									: "-"}
+								{project.fecha_fin_estimada || "-"}
 							</p>
 						</div>
 						{project.fecha_fin_real && (
 							<div>
 								<p className="text-sm text-muted-foreground">Actual End Date</p>
-								<p className="font-medium">{new Date(project.fecha_fin_real).toLocaleDateString()}</p>
+								<p className="font-medium">{project.fecha_fin_real || "-"}</p>
 							</div>
 						)}
 					</div>
@@ -327,11 +327,9 @@ export function ProjectDetail({ project, assignments, employees, permissions }: 
 										<TableCell className="capitalize">
 											{assignment.categoria?.replace("_", " ") || "-"}
 										</TableCell>
-										<TableCell>{new Date(assignment.fecha_inicio).toLocaleDateString()}</TableCell>
+										<TableCell>{assignment.fecha_inicio || "-"}</TableCell>
 										<TableCell>
-											{assignment.fecha_fin
-												? new Date(assignment.fecha_fin).toLocaleDateString()
-												: "-"}
+											{assignment.fecha_fin || "-"}
 										</TableCell>
 										<TableCell>
 											<Badge variant={assignment.estado === "activo" ? "default" : "secondary"}>

@@ -13,7 +13,7 @@ export const createProjectSchema = z.object({
     message: "Invalid project status.",
   }).default("planificada"),
   presupuesto: z.preprocess(
-    (val) => (val === undefined ? undefined : Number(val)),
+    (val) => (val === "" ? 0 : Number(val)),
     z.number().min(0, { message: "Budget must be a non-negative number." }).optional()
   ),
   descripcion: z.string().optional().or(z.literal('')),
@@ -39,7 +39,7 @@ export const editProjectSchema = z.object({
     message: "Invalid project status.",
   }).optional(),
   presupuesto: z.preprocess(
-    (val) => (val === "" ? undefined : Number(val)),
+    (val) => (val === "" ? 0 : Number(val)),
     z.number().min(0, { message: "Budget must be a non-negative number." }).optional()
   ),
   descripcion: z.string().optional().or(z.literal('')),

@@ -1,51 +1,78 @@
-'use client'
+"use client";
 
-import { useRouter } from 'next/navigation'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
-import { toast } from 'sonner'
+import { useEffect, type FC } from "react";
+import { useRouter } from "next/navigation";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { toast } from "sonner";
 
-import { Button } from '@/components/ui/button'
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { createProject } from "@/app/actions/projects"
-import { createProjectSchema, CreateProjectFormValues } from '@/lib/validations/project-schema'
+import { createProject, updateProject } from "@/app/actions/projects";
+import {
+  createProjectSchema,
+  editProjectSchema,
+  CreateProjectFormValues,
+  EditProjectFormValues,
+} from "@/lib/validations/project-schema";
+import { Button } from "@/components/ui/button";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { Obra } from "@/lib/data/types/database";
 
-export function ProjectForm() {
-  const router = useRouter()
-  const form = useForm<CreateProjectFormValues>({
-    resolver: zodResolver(createProjectSchema),
+type ProjectFormValues = CreateProjectFormValues | EditProjectFormValues;
+
+interface ProjectFormProps {
+  project?: Obra | null;
+}
+
+export const ProjectForm: FC<ProjectFormProps> = ({ project }) => {
+  const router = useRouter();
+  const isEditing = !!project;
+  const formSchema = isEditing ? editProjectSchema : createProjectSchema;
+
+  const form = useForm<ProjectFormValues>({
+    resolver: zodResolver(formSchema),
     defaultValues: {
-      nombre: '',
-      codigo: '',
-      ubicacion: '',
-      fecha_inicio: '',
-      fecha_fin_estimada: '',
-      presupuesto: undefined, // Should be undefined for optional numbers
-      descripcion: '',
-      estado: 'planificada',
+      nombre: "",
+      codigo: "",
+      ubicacion: "",
+      fecha_inicio: "",
+      fecha_fin_estimada: "",
+      presupuesto: 0,
+      descripcion: "",
+      estado: "planificada",
     },
-  })
+  });
 
-  const { isSubmitting } = form.formState
-
-  const onSubmit = async (values: CreateProjectFormValues) => {
-    try {
-      await createProject(values)
-      toast.success('Project created successfully!')
-      router.push('/projects')
-    } catch (error) {
-      toast.error('Failed to create project.')
+  useEffect(() => {
+    if (project) {
+      form.reset(project);
     }
-  }
+  }, [project, form]);
+
+  const { isSubmitting } = form.formState;
+
+  const onSubmit = async (values: ProjectFormValues) => {
+    try {
+      if (isEditing && project) {
+        await updateProject(project.id, values as EditProjectFormValues);
+        toast.success("Project updated successfully!");
+        router.push("/projects");
+      } else {
+        await createProject(values as CreateProjectFormValues);
+        toast.success("Project created successfully!");
+        router.push("/projects");
+      }
+    } catch (error) {
+      toast.error("Failed to save project.");
+    }
+  };
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <Card>
           <CardHeader>
             <CardTitle>Project Information</CardTitle>
@@ -128,7 +155,7 @@ export function ProjectForm() {
                   <FormItem>
                     <FormLabel>Budget</FormLabel>
                     <FormControl>
-                      <Input type="number" step="0.01" {...field} />
+                      <Input type="number" step="0.01" {...field} value={field.value ?? ''} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -142,7 +169,7 @@ export function ProjectForm() {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Status</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue />
@@ -174,17 +201,23 @@ export function ProjectForm() {
               )}
             />
 
-            <div className="flex gap-4">
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Creating..." : "Create Project"}
-              </Button>
+            <div className="flex justify-end space-x-2 pt-4">
               <Button type="button" variant="outline" onClick={() => router.back()}>
                 Cancel
+              </Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting
+                  ? isEditing
+                    ? "Saving..."
+                    : "Creating..."
+                  : isEditing
+                  ? "Save Changes"
+                  : "Create Project"}
               </Button>
             </div>
           </CardContent>
         </Card>
       </form>
     </Form>
-  )
-}
+  );
+};
