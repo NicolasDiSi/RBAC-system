@@ -5,21 +5,18 @@ import { deleteUserSessions } from "@/lib/services/auth/session"
 import { checkPermission } from "@/lib/services/auth/permissions"
 import { createUserSchema, editUserSchema } from "@/lib/validations/user-schema"
 import { createRoleSchema, editRoleSchema } from "@/lib/validations/role-schema" // New import
+import { adminUpdatePasswordSchema } from "@/lib/validations/password-schemas"
 import { UserDAO } from "@/lib/data/user"
 import { RoleDAO } from "@/lib/data/role"
 import { getSupabaseServerClient } from "@/lib/services/supabase/server"
 
-export async function createUser(formData: FormData) {
+export async function createUser(data: FormData) {
   const hasPermission = await checkPermission("users.create")
   if (!hasPermission) {
     throw new Error("Unauthorized")
   }
 
-  const formObject = Object.fromEntries(formData.entries());
-  const validatedFields = createUserSchema.safeParse({
-    ...formObject,
-    is_active: formObject.is_active === 'true'
-  });
+  const validatedFields = createUserSchema.safeParse(data);
 
   if (!validatedFields.success) {
     throw new Error("Invalid user data.")
@@ -30,17 +27,13 @@ export async function createUser(formData: FormData) {
   revalidatePath("/admin/users")
 }
 
-export async function updateUser(userId: string, formData: FormData) {
+export async function updateUser(userId: string, data: FormData) {
   const hasPermission = await checkPermission("users.update")
   if (!hasPermission) {
     throw new Error("Unauthorized")
   }
 
-  const formObject = Object.fromEntries(formData.entries());
-  const validatedFields = editUserSchema.safeParse({
-    ...formObject,
-    is_active: formObject.is_active === 'true'
-  });
+  const validatedFields = editUserSchema.safeParse(data);
 
   if (!validatedFields.success) {
     throw new Error("Invalid user data.")
@@ -105,14 +98,13 @@ export async function getRoles() {
   return RoleDAO.getAll()
 }
 
-export async function createRole(formData: FormData) {
+export async function createRole(data: any) {
   const hasPermission = await checkPermission("roles.create")
   if (!hasPermission) {
     throw new Error("Unauthorized")
   }
 
-  const formObject = Object.fromEntries(formData.entries());
-  const validatedFields = createRoleSchema.safeParse(formObject);
+  const validatedFields = createRoleSchema.safeParse(data);
 
   if (!validatedFields.success) {
     throw new Error("Invalid role data.")
@@ -123,14 +115,13 @@ export async function createRole(formData: FormData) {
   revalidatePath("/admin/roles")
 }
 
-export async function updateRole(roleId: string, formData: FormData) {
+export async function updateRole(roleId: string, data: FormData) {
   const hasPermission = await checkPermission("roles.update")
   if (!hasPermission) {
     throw new Error("Unauthorized")
   }
 
-  const formObject = Object.fromEntries(formData.entries());
-  const validatedFields = editRoleSchema.safeParse(formObject);
+  const validatedFields = editRoleSchema.safeParse(data);
 
   if (!validatedFields.success) {
     throw new Error("Invalid role data.")
@@ -152,18 +143,19 @@ export async function deleteRole(roleId: string) {
   revalidatePath("/admin/roles")
 }
 
-export async function updateUserPassword(userId: string, formData: FormData) {
+export async function updateUserPassword(userId: string, data: FormData) {
   const hasPermission = await checkPermission("users.update_password")
   if (!hasPermission) {
     throw new Error("Unauthorized")
   }
 
-  const newPassword = formData.get('password') as string
-  const signOutUser = formData.get('sign_out_user') === 'true'
+  const validatedFields = adminUpdatePasswordSchema.safeParse({...data});
 
-  if (!newPassword || newPassword.length < 8) {
-    throw new Error("Password must be at least 8 characters.")
+  if (!validatedFields.success) {
+    throw new Error(validatedFields.error.errors.map(e => e.message).join(', '));
   }
+
+  const { password: newPassword, sign_out_user: signOutUser } = validatedFields.data;
 
   await UserDAO.updatePassword(userId, newPassword)
   

@@ -12,7 +12,15 @@ export const changePasswordSchema = z
   })
 
 export const resetPasswordSchema = z.object({
+
   email: z.string().email({
     message: 'Please enter a valid email address.',
   }),
+
 })
+
+export const adminUpdatePasswordSchema = z.object({
+
+  password: z.string().min(8, { message: 'Password must be at least 8 characters long' }),
+  sign_out_user: z.boolean().default(false),
+});
