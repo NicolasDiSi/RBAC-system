@@ -1,287 +1,293 @@
-'use client'
+"use client";
 
-import { useEffect, type FC } from 'react'
-import { useRouter } from 'next/navigation'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { toast } from 'sonner'
+import { useEffect, type FC } from "react";
+import { useRouter } from "next/navigation";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { toast } from "sonner";
 
-import { createEmployee, updateEmployee } from '@/app/actions/employees'
-import { createEmployeeSchema, editEmployeeSchema, CreateEmployeeFormValues, EditEmployeeFormValues } from '@/lib/validations/employee-schema'
-import { Button } from '@/components/ui/button'
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import type { Empleado } from '@/lib/data/types/database'
+import { createEmployee, updateEmployee } from "@/app/actions/employees";
+import {
+	createEmployeeSchema,
+	editEmployeeSchema,
+	CreateEmployeeFormValues,
+	EditEmployeeFormValues,
+} from "@/lib/validations/employee-schema";
+import { Button } from "@/components/ui/button";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { Empleado } from "@/lib/data/types/database";
 
-type EmployeeFormValues = CreateEmployeeFormValues | EditEmployeeFormValues
+type EmployeeFormValues = CreateEmployeeFormValues | EditEmployeeFormValues;
 
 interface EmployeeFormProps {
-  employee?: Empleado | null
+	employee?: Empleado | null;
 }
 
 export const EmployeeForm: FC<EmployeeFormProps> = ({ employee }) => {
-  const router = useRouter()
-  const isEditing = !!employee
-  const formSchema = isEditing ? editEmployeeSchema : createEmployeeSchema
+	const router = useRouter();
+	const isEditing = !!employee;
+	const formSchema = isEditing ? editEmployeeSchema : createEmployeeSchema;
 
-  const form = useForm<EmployeeFormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      nombre: '',
-      apellido: '',
-      dni: '',
-      fecha_nacimiento: '',
-      telefono: '',
-      email: '',
-      direccion: '',
-      fecha_ingreso: '',
-      fecha_egreso: '',
-      tipo_contrato: '',
-      categoria: '',
-      observaciones: '',
-    },
-  })
+	const form = useForm<EmployeeFormValues>({
+		resolver: zodResolver(formSchema),
+		defaultValues: {
+			nombre: "",
+			apellido: "",
+			dni: "",
+			fecha_nacimiento: "",
+			telefono: "",
+			email: "",
+			direccion: "",
+			fecha_ingreso: "",
+			fecha_egreso: "",
+			tipo_contrato: "",
+			categoria: "",
+			observaciones: "",
+		},
+	});
 
-  useEffect(() => {
-    if (employee) {
-      form.reset({
-        ...employee,
-        fecha_nacimiento: employee.fecha_nacimiento ? new Date(employee.fecha_nacimiento).toISOString().split('T')[0] : '',
-        fecha_ingreso: employee.fecha_ingreso ? new Date(employee.fecha_ingreso).toISOString().split('T')[0] : '',
-        fecha_egreso: employee.fecha_egreso ? new Date(employee.fecha_egreso).toISOString().split('T')[0] : '',
-      })
-    }
-  }, [employee, form])
+	useEffect(() => {
+		if (employee) {
+			form.reset(employee);
+		}
+	}, [employee, form]);
 
-  const { isSubmitting } = form.formState
+	const { isSubmitting } = form.formState;
 
-  const onSubmit = async (values: EmployeeFormValues) => {
-    try {
-      if (isEditing && employee) {
-        await updateEmployee(employee.id, values as EditEmployeeFormValues)
-        toast.success('Employee updated successfully!')
-        router.push('/employees')
-      } else {
-        await createEmployee(values as CreateEmployeeFormValues)
-        toast.success('Employee created successfully!')
-        router.push('/employees')
-      }
-    } catch (error) {
-      toast.error('Failed to save employee.')
-    }
-  }
+	const onSubmit = async (values: EmployeeFormValues) => {
+		try {
+			if (isEditing && employee) {
+				await updateEmployee(employee.id, values as EditEmployeeFormValues);
+				toast.success("Employee updated successfully!");
+				router.push("/employees");
+			} else {
+				await createEmployee(values as CreateEmployeeFormValues);
+				toast.success("Employee created successfully!");
+				router.push("/employees");
+			}
+		} catch (error) {
+			toast.error("Failed to save employee.");
+		}
+	};
 
-  return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <Card>
-          <CardHeader>
-            <CardTitle>Employee Information</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid gap-4 md:grid-cols-2">
-              <FormField
-                control={form.control}
-                name="nombre"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>First Name *</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="apellido"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Last Name *</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+	return (
+		<Form {...form}>
+			<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+				<Card>
+					<CardHeader>
+						<CardTitle>Employee Information</CardTitle>
+					</CardHeader>
+					<CardContent className="space-y-6">
+						<div className="grid gap-4 md:grid-cols-2">
+							<FormField
+								control={form.control}
+								name="nombre"
+								render={({ field }) => (
+									<FormItem>
+										<FormLabel>First Name *</FormLabel>
+										<FormControl>
+											<Input {...field} />
+										</FormControl>
+										<FormMessage />
+									</FormItem>
+								)}
+							/>
+							<FormField
+								control={form.control}
+								name="apellido"
+								render={({ field }) => (
+									<FormItem>
+										<FormLabel>Last Name *</FormLabel>
+										<FormControl>
+											<Input {...field} />
+										</FormControl>
+										<FormMessage />
+									</FormItem>
+								)}
+							/>
+						</div>
 
-            <div className="grid gap-4 md:grid-cols-2">
-              <FormField
-                control={form.control}
-                name="dni"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>DNI *</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="fecha_nacimiento"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Date of Birth</FormLabel>
-                    <FormControl>
-                      <Input type="date" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+						<div className="grid gap-4 md:grid-cols-2">
+							<FormField
+								control={form.control}
+								name="dni"
+								render={({ field }) => (
+									<FormItem>
+										<FormLabel>DNI *</FormLabel>
+										<FormControl>
+											<Input {...field} />
+										</FormControl>
+										<FormMessage />
+									</FormItem>
+								)}
+							/>
+							<FormField
+								control={form.control}
+								name="fecha_nacimiento"
+								render={({ field }) => (
+									<FormItem>
+										<FormLabel>Date of Birth</FormLabel>
+										<FormControl>
+											<Input type="date" {...field} />
+										</FormControl>
+										<FormMessage />
+									</FormItem>
+								)}
+							/>
+						</div>
 
-            <div className="grid gap-4 md:grid-cols-2">
-              <FormField
-                control={form.control}
-                name="telefono"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Phone</FormLabel>
-                    <FormControl>
-                      <Input type="tel" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input type="email" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+						<div className="grid gap-4 md:grid-cols-2">
+							<FormField
+								control={form.control}
+								name="telefono"
+								render={({ field }) => (
+									<FormItem>
+										<FormLabel>Phone</FormLabel>
+										<FormControl>
+											<Input type="tel" {...field} />
+										</FormControl>
+										<FormMessage />
+									</FormItem>
+								)}
+							/>
+							<FormField
+								control={form.control}
+								name="email"
+								render={({ field }) => (
+									<FormItem>
+										<FormLabel>Email</FormLabel>
+										<FormControl>
+											<Input type="email" {...field} />
+										</FormControl>
+										<FormMessage />
+									</FormItem>
+								)}
+							/>
+						</div>
 
-            <FormField
-              control={form.control}
-              name="direccion"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Address</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+						<FormField
+							control={form.control}
+							name="direccion"
+							render={({ field }) => (
+								<FormItem>
+									<FormLabel>Address</FormLabel>
+									<FormControl>
+										<Input {...field} />
+									</FormControl>
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
 
-            <div className="grid gap-4 md:grid-cols-3">
-              <FormField
-                control={form.control}
-                name="fecha_ingreso"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Start Date *</FormLabel>
-                    <FormControl>
-                      <Input type="date" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="fecha_egreso"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>End Date</FormLabel>
-                    <FormControl>
-                      <Input type="date" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="tipo_contrato"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Contract Type</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select type" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="planta_permanente">Planta Permanente</SelectItem>
-                        <SelectItem value="contratado">Contratado</SelectItem>
-                        <SelectItem value="eventual">Eventual</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              </div>
-              <FormField
-                control={form.control}
-                name="categoria"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Category *</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select category" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="oficial">Oficial</SelectItem>
-                        <SelectItem value="medio_oficial">Medio Oficial</SelectItem>
-                        <SelectItem value="ayudante">Ayudante</SelectItem>
-                        <SelectItem value="peon">Peón</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+						<div className="grid gap-4 md:grid-cols-3">
+							<FormField
+								control={form.control}
+								name="fecha_ingreso"
+								render={({ field }) => (
+									<FormItem>
+										<FormLabel>Start Date *</FormLabel>
+										<FormControl>
+											<Input type="date" {...field} />
+										</FormControl>
+										<FormMessage />
+									</FormItem>
+								)}
+							/>
+							<FormField
+								control={form.control}
+								name="fecha_egreso"
+								render={({ field }) => (
+									<FormItem>
+										<FormLabel>End Date</FormLabel>
+										<FormControl>
+											<Input type="date" {...field} />
+										</FormControl>
+										<FormMessage />
+									</FormItem>
+								)}
+							/>
+							<FormField
+								control={form.control}
+								name="tipo_contrato"
+								render={({ field }) => (
+									<FormItem>
+										<FormLabel>Contract Type</FormLabel>
+										<FormControl>
+											<Select onValueChange={field.onChange} value={field.value}>
+												<SelectTrigger>
+													<SelectValue placeholder="Select type" />
+												</SelectTrigger>
+												<SelectContent>
+													<SelectItem value="planta_permanente">Planta Permanente</SelectItem>
+													<SelectItem value="contratado">Contratado</SelectItem>
+													<SelectItem value="eventual">Eventual</SelectItem>
+												</SelectContent>
+											</Select>
+										</FormControl>
+										<FormMessage />
+									</FormItem>
+								)}
+							/>
+						</div>
+						<FormField
+							control={form.control}
+							name="categoria"
+							render={({ field }) => (
+								<FormItem>
+									<FormLabel>Category *</FormLabel>
+									<FormControl>
+										<Select onValueChange={field.onChange} value={field.value}>
+											<SelectTrigger>
+												<SelectValue placeholder={`Select category`} />
+											</SelectTrigger>
+											<SelectContent>
+												<SelectItem value="oficial">Oficial</SelectItem>
+												<SelectItem value="medio_oficial">Medio Oficial</SelectItem>
+												<SelectItem value="ayudante">Ayudante</SelectItem>
+												<SelectItem value="peon">Peón</SelectItem>
+											</SelectContent>
+										</Select>
+									</FormControl>
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
 
-            <FormField
-              control={form.control}
-              name="observaciones"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Notes</FormLabel>
-                  <FormControl>
-                    <Textarea rows={3} {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+						<FormField
+							control={form.control}
+							name="observaciones"
+							render={({ field }) => (
+								<FormItem>
+									<FormLabel>Notes</FormLabel>
+									<FormControl>
+										<Textarea rows={3} {...field} />
+									</FormControl>
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
 
-            <div className="flex justify-end space-x-2 pt-4">
-              <Button type="button" variant="outline" onClick={() => router.back()}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? (isEditing ? 'Saving...' : 'Creating...') : (isEditing ? 'Save Changes' : 'Create Employee')}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </form>
-    </Form>
-  )
-}
+						<div className="flex justify-end space-x-2 pt-4">
+							<Button type="button" variant="outline" onClick={() => router.back()}>
+								Cancel
+							</Button>
+							<Button type="submit" disabled={isSubmitting}>
+								{isSubmitting
+									? isEditing
+										? "Saving..."
+										: "Creating..."
+									: isEditing
+									? "Save Changes"
+									: "Create Employee"}
+							</Button>
+						</div>
+					</CardContent>
+				</Card>
+			</form>
+		</Form>
+	);
+};

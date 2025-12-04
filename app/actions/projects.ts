@@ -121,29 +121,83 @@ export async function endAssignment(data: { assignment_id: string, fecha_fin: st
   }
 
   const supabase = await getSupabaseServerClient();
-
   const validatedData = endAssignmentSchema.parse(data);
+
+  const { data: existingAssignment, error: fetchError } = await supabase
+    .from("asignaciones_contratos")
+    .select("*")
+    .eq("id", validatedData.assignment_id)
+    .single();
+
+  if (fetchError) {
+    throw new Error(fetchError.message);
+  }
+
+  if (existingAssignment.fecha_fin) {
+    throw new Error("Cannot edit an assignment that has an end date.");
+  }
+
+  const { error: updateError } = await supabase
+    .from("asignaciones_contratos")
+    .update({ fecha_fin: validatedData.fecha_fin, estado: "finalizado" })
+    .eq("id", validatedData.assignment_id);
+
+  if (updateError) {
+    throw new Error(updateError.message);
+  }
+
+  await supabase.from("historial_relacion_laboral").insert({
+    empleado_id: existingAssignment.empleado_id,
+    fecha_evento: validatedData.fecha_fin,
+    tipo_evento: "egreso",
+    descripcion: `Assignment ended for project`,
+    obra_id: existingAssignment.obra_id,
+    created_by: user?.id,
+  });
+
+  revalidatePath(`/projects/${existingAssignment.obra_id}`);
+  revalidatePath(`/employees/${existingAssignment.empleado_id}`);
+
+  return {
+    ...existingAssignment,
+    fecha_fin: validatedData.fecha_fin,
+    estado: "finalizado",
+  };
+}
+
+export async function updateAssignment(assignmentId: string, data: any) {
+  const hasPermission = await checkPermission("assignments.update");
+  if (!hasPermission) {
+    throw new Error("Unauthorized");
+  }
+
+  const supabase = await getSupabaseServerClient();
+
+  const { data: existingAssignment, error: fetchError } = await supabase
+    .from("asignaciones_contratos")
+    .select("fecha_fin")
+    .eq("id", assignmentId)
+    .single();
+
+  if (fetchError) {
+    throw new Error(fetchError.message);
+  }
+
+  if (existingAssignment?.fecha_fin) {
+    throw new Error("Cannot edit an assignment that has an end date.");
+  }
+
+  const validatedData = createAssignmentSchema.parse(data);
 
   const { data: updatedAssignment, error } = await supabase
     .from("asignaciones_contratos")
-    .update({ fecha_fin: validatedData.fecha_fin, estado: "finalizado" })
-    .eq("id", validatedData.assignment_id)
+    .update(validatedData)
+    .eq("id", assignmentId)
     .select()
     .single();
 
   if (error) {
     throw new Error(error.message);
-  }
-
-  if (updatedAssignment) {
-    await supabase.from("historial_relacion_laboral").insert({
-      empleado_id: updatedAssignment.empleado_id,
-      fecha_evento: validatedData.fecha_fin,
-      tipo_evento: "egreso",
-      descripcion: `Assignment ended for project`,
-      obra_id: updatedAssignment.obra_id,
-      created_by: user?.id,
-    });
   }
 
   revalidatePath(`/projects/${updatedAssignment.obra_id}`);

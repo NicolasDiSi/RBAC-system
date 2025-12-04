@@ -1,11 +1,15 @@
 "use client"
+import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import Link from "next/link"
-import { ArrowLeft, Edit, FileText, History, Briefcase } from "lucide-react"
+import { ArrowLeft, Edit, FileText, History, Briefcase, UserX } from "lucide-react"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { DeactivateEmployeeForm } from "./deactivate-employee-form"
+import { toast } from "sonner"
 import type { Empleado, AsignacionContrato, Documento, HistorialRelacionLaboral } from "@/lib/data/types/database"
 
 interface EmployeeDetailProps {
@@ -13,9 +17,15 @@ interface EmployeeDetailProps {
   assignments: (AsignacionContrato & { obra: { nombre: string } })[]
   documents: Documento[]
   history: (HistorialRelacionLaboral & { obra: { nombre: string } | null })[]
+  permissions: {
+    canUpdate: boolean
+    canDeactivate: boolean
+  }
 }
 
-export function EmployeeDetail({ employee, assignments, documents, history }: EmployeeDetailProps) {
+export function EmployeeDetail({ employee, assignments, documents, history, permissions }: EmployeeDetailProps) {
+  const [deactivateDialogOpen, setDeactivateDialogOpen] = useState(false)
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -33,12 +43,22 @@ export function EmployeeDetail({ employee, assignments, documents, history }: Em
             <p className="text-muted-foreground">DNI: {employee.dni}</p>
           </div>
         </div>
-        <Link href={`/employees/${employee.id}/edit`} passHref>
-          <Button className="gap-2">
-            <Edit className="h-4 w-4" />
-            Edit
-          </Button>
-        </Link>
+        <div className="flex gap-2">
+          {permissions.canUpdate && (
+            <Link href={`/employees/${employee.id}/edit`} passHref>
+              <Button className="gap-2">
+                <Edit className="h-4 w-4" />
+                Edit
+              </Button>
+            </Link>
+          )}
+          {permissions.canDeactivate && employee.estado === "activo" && (
+            <Button variant="destructive" className="gap-2" onClick={() => setDeactivateDialogOpen(true)}>
+              <UserX className="h-4 w-4" />
+              Deactivate
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="grid gap-6 md:grid-cols-3">
@@ -243,6 +263,27 @@ export function EmployeeDetail({ employee, assignments, documents, history }: Em
           </Card>
         </TabsContent>
       </Tabs>
+      <Dialog open={deactivateDialogOpen} onOpenChange={setDeactivateDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Deactivate Employee</DialogTitle>
+            <DialogDescription>
+              Set the end date for the employment of {employee.nombre} {employee.apellido}.
+            </DialogDescription>
+          </DialogHeader>
+          <DeactivateEmployeeForm
+            employee={employee}
+            onSuccess={() => {
+              toast.success("Employee deactivated successfully!");
+              setDeactivateDialogOpen(false);
+            }}
+            onError={(error) => {
+              toast.error(error.message || "Failed to deactivate employee.");
+            }}
+            onCancel={() => setDeactivateDialogOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

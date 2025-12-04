@@ -63,7 +63,8 @@ INSERT INTO permissions (name, description, resource, action) VALUES
   ('employees.create', 'Create new employee records', 'employees', 'create'),
   ('employees.read', 'View employee information', 'employees', 'read'),
   ('employees.update', 'Update employee information', 'employees', 'update'),
-  ('employees.delete', 'Delete employee records', 'employees', 'delete')
+  ('employees.delete', 'Delete employee records', 'employees', 'delete'),
+  ('employees.deactivate', 'Deactivate employee records', 'employees', 'deactivate')
 ON CONFLICT (name) DO UPDATE SET
   description = EXCLUDED.description,
   resource = EXCLUDED.resource,

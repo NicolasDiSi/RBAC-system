@@ -7,7 +7,7 @@ import { getAuthenticatedUser } from "@/lib/services/auth/user"
 
 import { z } from "zod";
 import { createEmployeeSchema, editEmployeeSchema } from "@/lib/validations/employee-schema";
-import next from "next"
+import { deactivateEmployeeSchema } from "@/lib/validations/deactivation-schema"
 
 export async function createEmployee(data: any) {
   const hasPermission = await checkPermission("employees.create")
@@ -104,4 +104,56 @@ export async function updateEmployee(id: string, data: any) {
   return { success: true, message: "Employee updated successfully!", errors: null };
 }
 
+export async function deactivateEmployee(employeeId: string, data: any) {
+  const hasPermission = await checkPermission("employees.deactivate");
+  if (!hasPermission) {
+    return { success: false, message: "Unauthorized", errors: null };
+  }
+
+  const user = await getAuthenticatedUser();
+  const supabase = await getSupabaseServerClient();
+
+  let validatedData;
+  try {
+    validatedData = deactivateEmployeeSchema.parse(data);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      const fieldErrors: { [key: string]: string[] } = {};
+      error.errors.forEach((err) => {
+        const path = err.path.join('.');
+        if (!fieldErrors[path]) {
+          fieldErrors[path] = [];
+        }
+        fieldErrors[path].push(err.message);
+      });
+      return { success: false, message: "Validation failed.", errors: fieldErrors };
+    }
+    return { success: false, message: "An unknown validation error occurred.", errors: null };
+  }
+
+  const { error } = await supabase
+    .from("empleados")
+    .update({
+      estado: "inactivo",
+      fecha_egreso: validatedData.fecha_egreso,
+    })
+    .eq("id", employeeId);
+
+  if (error) {
+    return { success: false, message: error.message, errors: null };
+  }
+
+  // Create history entry for employee deactivation
+  await supabase.from("historial_relacion_laboral").insert({
+    empleado_id: employeeId,
+    fecha_evento: validatedData.fecha_egreso,
+    tipo_evento: "egreso",
+    descripcion: `Employee deactivated by ${user?.email}`,
+    created_by: user?.id,
+  });
+
+  revalidatePath("/employees");
+  revalidatePath(`/employees/${employeeId}`);
+  return { success: true, message: "Employee deactivated successfully!", errors: null };
+}
 

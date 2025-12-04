@@ -1,10 +1,16 @@
 import { redirect, notFound } from "next/navigation"
 import { getSupabaseServerClient } from "@/lib/services/supabase/server"
 import { EmployeeDetail } from "@/components/employees/employee-detail"
+import { checkPermission } from "@/lib/services/auth/permissions"
 
 export default async function EmployeeDetailPage({ params }: { params: { id: string } }) {
   const employeeId = String(params.id);
   const supabase = await getSupabaseServerClient()
+
+  const permissions = {
+    canUpdate: await checkPermission("employees.update"),
+    canDeactivate: await checkPermission("employees.deactivate"),
+  }
 
   // Fetch employee with related data
   const { data: employee } = await supabase.from("empleados").select("*").eq("id", employeeId).single()
@@ -46,6 +52,7 @@ export default async function EmployeeDetailPage({ params }: { params: { id: str
         assignments={assignments || []}
         documents={documents || []}
         history={history || []}
+        permissions={permissions}
       />
   )
 }

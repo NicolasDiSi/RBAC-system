@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import { ArrowLeft, Edit, MoreHorizontal, UserPlus } from "lucide-react";
 import type { Obra, AsignacionContrato, Empleado } from "@/lib/data/types/database";
-import { createAssignment, endAssignment } from "@/app/actions/projects";
+import { createAssignment, endAssignment, updateAssignment } from "@/app/actions/projects";
 import { useRouter } from "next/navigation";
 import { DropdownMenu } from "@radix-ui/react-dropdown-menu";
 import { DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "../ui/dropdown-menu";
@@ -35,6 +35,7 @@ export function ProjectDetail({ project, assignments, employees, permissions }: 
 	const router = useRouter();
 	const [dialogOpen, setDialogOpen] = useState(false);
 	const [endAssignmentDialogOpen, setEndAssignmentDialogOpen] = useState(false);
+	const [editAssignmentDialogOpen, setEditAssignmentDialogOpen] = useState(false);
 	const [selectedAssignment, setSelectedAssignment] = useState<(AsignacionContrato & { empleado: Empleado }) | null>(null);
 	const [loading, setLoading] = useState(false);
 
@@ -42,6 +43,11 @@ export function ProjectDetail({ project, assignments, employees, permissions }: 
 		setSelectedAssignment(assignment);
 		setEndAssignmentDialogOpen(true);
 	  };
+
+	const openEditAssignmentDialog = (assignment: AsignacionContrato & { empleado: Empleado }) => {
+		setSelectedAssignment(assignment);
+		setEditAssignmentDialogOpen(true);
+	};
 
 	const handleCreateAssignment = async (e: React.FormEvent<HTMLFormElement>) => {
 		e.preventDefault();
@@ -62,6 +68,34 @@ export function ProjectDetail({ project, assignments, employees, permissions }: 
 		setLoading(false);
 		setDialogOpen(false);
 		router.refresh();
+	};
+
+	const handleUpdateAssignment = async (e: React.FormEvent<HTMLFormElement>) => {
+		e.preventDefault();
+		if (!selectedAssignment) return;
+
+		setLoading(true);
+		const formData = new FormData(e.currentTarget);
+		const data = {
+			empleado_id: formData.get("empleado_id") as string,
+			obra_id: project.id,
+			fecha_inicio: formData.get("fecha_inicio") as string,
+			fecha_fin: formData.get("fecha_fin") as string,
+			tipo_contrato: formData.get("tipo_contrato") as string,
+			categoria: formData.get("categoria") as string,
+			salario: formData.get("salario") as string,
+		};
+
+		try {
+			await updateAssignment(selectedAssignment.id, data);
+			toast.success("Assignment updated successfully!");
+			setEditAssignmentDialogOpen(false);
+			router.refresh();
+		} catch (error: any) {
+			toast.error(error.message);
+		} finally {
+			setLoading(false);
+		}
 	};
 
 	const getStatusColor = (estado: string) => {
@@ -315,10 +349,16 @@ export function ProjectDetail({ project, assignments, employees, permissions }: 
 													</DropdownMenuTrigger>
 													<DropdownMenuContent align="end">
 														<DropdownMenuLabel>Actions</DropdownMenuLabel>
-														{permissions.canUpdate && (
+														{permissions.canUpdate &&  (
 															<DropdownMenuItem onClick={() => openEndAssignmentDialog(assignment)}>
 																<Edit className="mr-2 h-4 w-4" />
 																<span>End Assigment</span>
+															</DropdownMenuItem>
+														)}
+														{permissions.canUpdate && (
+															<DropdownMenuItem onClick={() => openEditAssignmentDialog(assignment)}>
+																<Edit className="mr-2 h-4 w-4" />
+																<span>Edit</span>
 															</DropdownMenuItem>
 														)}
 													</DropdownMenuContent>
@@ -356,6 +396,99 @@ export function ProjectDetail({ project, assignments, employees, permissions }: 
 							}}
 							onCancel={() => setEndAssignmentDialogOpen(false)}
 						/>
+					)}
+				</DialogContent>
+			</Dialog>
+			<Dialog open={editAssignmentDialogOpen} onOpenChange={setEditAssignmentDialogOpen}>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>Edit Assignment</DialogTitle>
+					</DialogHeader>
+					{selectedAssignment && (
+						<form onSubmit={handleUpdateAssignment} className="space-y-4">
+							<div className="space-y-2">
+								<Label>Employee</Label>
+								<Input
+									readOnly
+									value={`${selectedAssignment.empleado.nombre} ${selectedAssignment.empleado.apellido} - ${selectedAssignment.empleado.dni}`}
+								/>
+								<Input readOnly type="hidden" name="empleado_id" value={selectedAssignment.empleado.id} />
+							</div>
+							<div className="flex flex-wrap gap-8">
+								<div className="space-y-2">
+									<Label htmlFor="fecha_inicio">Start Date *</Label>
+									<Input
+										id="fecha_inicio"
+										name="fecha_inicio"
+										type="date"
+										defaultValue={new Date(selectedAssignment.fecha_inicio).toISOString().split("T")[0]}
+										required
+									/>
+								</div>
+								<div className="space-y-2">
+									<Label htmlFor="fecha_fin">End Date</Label>
+									<Input
+										id="fecha_fin"
+										name="fecha_fin"
+										type="date"
+										defaultValue={
+											selectedAssignment.fecha_fin
+												? new Date(selectedAssignment.fecha_fin).toISOString().split("T")[0]
+												: ""
+										}
+									/>
+								</div>
+							</div>
+							<div className="space-y-2">
+								<Label htmlFor="tipo_contrato">Contract Type *</Label>
+								<Select name="tipo_contrato" defaultValue={selectedAssignment.tipo_contrato} required>
+									<SelectTrigger>
+										<SelectValue placeholder="Select type" />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value="planta_permanente">Planta Permanente</SelectItem>
+										<SelectItem value="contratado">Contratado</SelectItem>
+										<SelectItem value="eventual">Eventual</SelectItem>
+									</SelectContent>
+								</Select>
+							</div>
+							<div className="space-y-2">
+								<Label htmlFor="categoria">Category *</Label>
+								<Select name="categoria" defaultValue={selectedAssignment.categoria ?? ""} required>
+									<SelectTrigger>
+										<SelectValue placeholder="Select category" />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value="oficial">Oficial</SelectItem>
+										<SelectItem value="medio_oficial">Medio Oficial</SelectItem>
+										<SelectItem value="ayudante">Ayudante</SelectItem>
+										<SelectItem value="peon">Peón</SelectItem>
+									</SelectContent>
+								</Select>
+							</div>
+							<div className="space-y-2">
+								<Label htmlFor="salario">Salary</Label>
+								<Input
+									id="salario"
+									name="salario"
+									type="number"
+									step="0.01"
+									defaultValue={selectedAssignment.salario ?? ""}
+								/>
+							</div>
+							<div className="flex gap-4">
+								<Button type="submit" disabled={loading}>
+									{loading ? "Saving..." : "Save"}
+								</Button>
+								<Button
+									type="button"
+									variant="outline"
+									onClick={() => setEditAssignmentDialogOpen(false)}
+								>
+									Cancel
+								</Button>
+							</div>
+						</form>
 					)}
 				</DialogContent>
 			</Dialog>
