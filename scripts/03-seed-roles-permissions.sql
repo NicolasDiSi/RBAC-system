@@ -39,7 +39,7 @@ INSERT INTO permissions (name, description, resource, action) VALUES
   ('users.read_signup_codes', 'View all generated signup codes', 'users', 'read_signup_codes'),
   ('users.update_signup_code', 'Update a signup code, e.g., to mark it as used', 'users', 'update_signup_code'),
   ('users.delete_signup_code', 'Delete an unused signup code', 'users', 'delete_signup_code'),
-  ('users.generate_share_link', 'Generate secure, temporary login links for users', 'users', 'generate_share_link')
+  ('users.send_verification_email', 'Send a verification email to a user', 'users', 'send_verification_email')
 ON CONFLICT (name) DO UPDATE SET
   description = EXCLUDED.description,
   resource = EXCLUDED.resource,

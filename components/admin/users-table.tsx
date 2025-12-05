@@ -2,7 +2,7 @@
  
 import { useRouter } from 'next/navigation'
 import { useState, useCallback } from 'react'
-import { MoreHorizontal, Key, Share2, UserPlus, Edit, Mail, ShieldAlert, Trash2 } from 'lucide-react'
+import { UserPlus, Edit, Mail, ShieldAlert, Trash2, Repeat, MoreHorizontal } from 'lucide-react'
 import { toast } from 'sonner'
 import { createUser, updateUser, updateUserPassword, resetPasswordForEmail, deleteUser } from '@/app/actions/admin'
 import { Badge } from '@/components/ui/badge'
@@ -33,13 +33,13 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog'
-import { ShareCredentialsModal } from './share-credentials-modal'
+import { ResendVerificationModal } from './resend-verification-modal'
 import { UserForm } from './user-form'
 import { ChangePasswordForm } from './change-password-form'
 import { ResetPasswordForm } from './reset-password-form'
 
 export function UsersTable({ users, roles, permissions }) {
-  const [isShareModalOpen, setIsShareModalOpen] = useState(false)
+  const [isResendVerificationModalOpen, setIsResendVerificationModalOpen] = useState(false)
   const [isChangePasswordDialogOpen, setIsChangePasswordDialogOpen] = useState(false)
   const [isResetPasswordDialogOpen, setIsResetPasswordDialogOpen] = useState(false)
   const [isUserFormOpen, setIsUserFormOpen] = useState(false)
@@ -99,14 +99,14 @@ export function UsersTable({ users, roles, permissions }) {
     dialogSetter(true)
   }
 
-  const openShareModal = (user: (typeof users)[0]) => {
+  const openResendVerificationModal = (user: (typeof users)[0]) => {
     setSelectedUser(user)
-    setIsShareModalOpen(true)
+    setIsResendVerificationModalOpen(true)
   }
 
-  const closeShareModal = () => {
+  const closeResendVerificationModal = () => {
     setSelectedUser(null)
-    setIsShareModalOpen(false)
+    setIsResendVerificationModalOpen(false)
   }
 
   return (
@@ -158,10 +158,10 @@ export function UsersTable({ users, roles, permissions }) {
                         <span>Edit</span>
                       </DropdownMenuItem>
                     )}
-                    {permissions.canShare && (
-                      <DropdownMenuItem onClick={() => openShareModal(user)}>
-                        <Share2 className="mr-2 h-4 w-4" />
-                        <span>Share</span>
+                    {permissions.canResendVerification && ( // Assuming a new permission for this
+                      <DropdownMenuItem onClick={() => openResendVerificationModal(user)}>
+                        <Repeat className="mr-2 h-4 w-4" />
+                        <span>Resend Verification Email</span>
                       </DropdownMenuItem>
                     )}
                     {permissions.canUpdatePassword && (
@@ -251,10 +251,11 @@ export function UsersTable({ users, roles, permissions }) {
         </DialogContent>
       </Dialog>
       {selectedUser && (
-        <ShareCredentialsModal
-          isOpen={isShareModalOpen}
-          onClose={closeShareModal}
+        <ResendVerificationModal
+          isOpen={isResendVerificationModalOpen}
+          onClose={closeResendVerificationModal}
           userId={selectedUser.id}
+          userEmail={selectedUser.email}
         />
       )}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>

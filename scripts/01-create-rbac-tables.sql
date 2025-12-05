@@ -37,7 +37,8 @@ CREATE TABLE IF NOT EXISTS users (
   is_active BOOLEAN DEFAULT FALSE,
   role_id UUID REFERENCES roles(id) ON DELETE SET NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  verified_at TIMESTAMP WITH TIME ZONE DEFAULT NULL
 );
 
 -- ============================================================================

@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseServiceRoleClient } from '@/lib/services/supabase/server'
 import { getSignupCodeByCode } from '@/lib/data/signupCode'
+import { createVerificationToken } from '@/app/actions/verificationToken'
+import { sendVerificationEmail } from '@/lib/services/email'
 
 export async function POST(request: Request) {
   const { name, email, password, code } = await request.json()
@@ -27,7 +29,7 @@ export async function POST(request: Request) {
   }
 
   // 3. Sign up the user with Supabase Auth
-  // This will send the verification email.
+  // Assuming Supabase email confirmation is disabled, we will send our custom email.
   const { data: authData, error: authError } = await supabase.auth.signUp({
     email,
     password,
@@ -62,7 +64,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: 'Could not create user profile.' }, { status: 500 })
   }
 
-  // 5. Mark the signup code as used
+  // 5. Generate and send custom verification email
+  try {
+    const { token } = await createVerificationToken(newUser.id, 'email_verification');
+    await sendVerificationEmail(newUser.email!, token);
+  } catch (emailError) {
+    console.error('Error sending verification email:', emailError);
+    // This is not a critical failure for user creation, but should be logged.
+    // Consider adding a retry mechanism or alerting system here.
+  }
+
+  // 6. Mark the signup code as used
   const { error: codeUpdateError } = await supabase
     .from('signup_codes')
     .update({
@@ -79,7 +91,7 @@ export async function POST(request: Request) {
   }
 
   return NextResponse.json(
-    { message: 'Registration successful! Please check your email to verify your account.' },
+    { message: 'Registration successful! Please check your email for a verification link.' },
     { status: 200 }
   )
 }

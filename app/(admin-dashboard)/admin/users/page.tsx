@@ -22,7 +22,7 @@ export default async function AdminUsersPage() {
     canUpdate: await checkPermission("users.update"),
     canDelete: await checkPermission("users.delete"),
     canUpdatePassword: await checkPermission("users.update_password"),
-    canShare: await checkPermission("users.share"), // Assuming this permission exists
+    canResendVerification: await checkPermission("users.send_verification_email"), // Assuming this permission exists
   }
 
   return (

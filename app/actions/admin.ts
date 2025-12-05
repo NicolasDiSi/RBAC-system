@@ -6,9 +6,12 @@ import { checkPermission } from "@/lib/services/auth/permissions"
 import { createUserSchema, editUserSchema } from "@/lib/validations/user-schema"
 import { createRoleSchema, editRoleSchema } from "@/lib/validations/role-schema" // New import
 import { adminUpdatePasswordSchema } from "@/lib/validations/password-schemas"
-import { UserDAO } from "@/lib/data/user"
+import { getUserById, UserDAO } from "@/lib/data/user"
 import { RoleDAO } from "@/lib/data/role"
 import { getSupabaseServerClient } from "@/lib/services/supabase/server"
+
+import { createVerificationToken } from "./verificationToken"
+import { sendVerificationEmail } from "@/lib/services/email"
 
 export async function createUser(data: FormData) {
   const hasPermission = await checkPermission("users.create")
@@ -181,5 +184,25 @@ export async function resetPasswordForEmail(email: string) {
 
   if (error) {
     throw new Error(error.message)
+  }
+}
+
+export async function resendVerificationEmail(userId: string) {
+  const hasPermission = await checkPermission("users.send_verification_email") // Assuming a new permission
+  if (!hasPermission) {
+    throw new Error("Unauthorized")
+  }
+
+  const user = await getUserById(userId)
+  if (!user || !user.email) {
+    throw new Error("User not found or email missing.")
+  }
+
+  try {
+    const { token } = await createVerificationToken(userId, 'email_verification');
+    await sendVerificationEmail(user.email, token);
+  } catch (emailError) {
+    console.error('Error resending verification email:', emailError);
+    throw new Error('Failed to resend verification email.');
   }
 }
