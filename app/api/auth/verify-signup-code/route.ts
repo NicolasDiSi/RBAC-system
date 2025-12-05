@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
 import { getSignupCodeByCode } from '@/lib/data/signupCode'
-import { markSignupCodeAsUsed } from '@/app/actions/signupCode'
 
 export async function POST(request: Request) {
   try {
@@ -24,11 +23,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: 'Signup code has expired' }, { status: 410 })
     }
 
-    // Mark the code as used immediately to prevent race conditions
-    await markSignupCodeAsUsed(signupCode.id)
-
+    // The code is valid. Return it to the client to proceed to the next step.
+    // DO NOT mark it as used here. It will be marked as used upon successful registration.
     return NextResponse.json(
-      { message: 'Signup code verified successfully', userId: signupCode.user_id },
+      { message: 'Signup code verified successfully', code: signupCode.code },
       { status: 200 }
     )
   } catch (error) {

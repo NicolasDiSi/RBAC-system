@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input'
 import { GoogleSignInButton } from '@/components/auth/google-sign-in-button'
 import { Separator } from '@/components/ui/separator'
 import { InputPassword } from '@/components/ui/password-input'
+import Link from 'next/link'
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Invalid email address.' }),
@@ -111,10 +112,10 @@ export default function LoginPage() {
           <GoogleSignInButton />
 
           <div className="text-center text-sm text-muted-foreground">
-            Don&apos;t have an account?{' '}
-            <a href="/auth/signup" className="underline underline-offset-4 hover:text-primary">
+            Don&apos;t have an account?
+            <Link href="/auth/enter-code" className="px-2 underline underline-offset-4 hover:text-primary">
               Sign up
-            </a>
+            </Link>
           </div>
         </CardContent>
       </Card>

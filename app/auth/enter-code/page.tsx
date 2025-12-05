@@ -11,7 +11,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp' // Assuming this component exists
 import { Separator } from '@/components/ui/separator'
-import { GoogleSignInButton } from '@/components/auth/google-sign-in-button'
 
 
 const formSchema = z.object({
@@ -39,7 +38,7 @@ export default function EnterCodePage() {
     if (response.ok) {
       const data = await response.json()
       toast.success('Code verified successfully! You can now complete your registration.')
-      router.push(`/auth/signup?userId=${data.userId}`)
+      router.push(`/auth/signup?code=${data.code}`)
     } else {
       const data = await response.json()
       toast.error(data.message || 'An unexpected error occurred.')
@@ -48,8 +47,8 @@ export default function EnterCodePage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/30 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
+      <Card className="w-full max-w-sm">
+        <CardHeader className="space-y-1 text-center">
           <CardTitle>Enter Signup Code</CardTitle>
           <CardDescription>Please enter the 6-digit code provided by your administrator.</CardDescription>
         </CardHeader>
@@ -60,8 +59,7 @@ export default function EnterCodePage() {
                 control={form.control}
                 name="code"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Signup Code</FormLabel>
+                  <FormItem className='justify-center'>
                     <FormControl>
                       <InputOTP maxLength={6} {...field}>
                         <InputOTPGroup>
@@ -74,7 +72,7 @@ export default function EnterCodePage() {
                         </InputOTPGroup>
                       </InputOTP>
                     </FormControl>
-                    <FormMessage />
+                    <FormMessage className='text-center' />
                   </FormItem>
                 )}
               />

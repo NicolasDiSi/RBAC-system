@@ -19,6 +19,7 @@ import {
   LucideIcon,
   LineChart,
   Shield,
+  CodeSquare,
 } from "lucide-react";
 
 const iconMap: Record<string, LucideIcon> = {
@@ -29,6 +30,7 @@ const iconMap: Record<string, LucideIcon> = {
   FileText,
   LineChart,
   Shield,
+  CodeSquare
 };
 
 type NavLink = {

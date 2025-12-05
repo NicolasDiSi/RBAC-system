@@ -5,9 +5,9 @@ import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
-export default async function ShareTokenPage({ params }: { params: Promise<{ token: string }> }) {
+export default function ShareTokenPage({ params }: { params: { token: string } }) {
   const router = useRouter()
-  const { token } = await params
+  const { token } = params
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 

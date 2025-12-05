@@ -9,9 +9,11 @@
 CREATE TABLE IF NOT EXISTS signup_codes (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   code VARCHAR(6) UNIQUE NOT NULL,
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  role_id UUID REFERENCES public.roles(id) ON DELETE SET NULL,
   expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
   is_used BOOLEAN DEFAULT FALSE NOT NULL,
+  used_by_user_id UUID REFERENCES public.users(id) ON DELETE SET NULL,
+  used_at TIMESTAMP WITH TIME ZONE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
 );
@@ -19,32 +21,34 @@ CREATE TABLE IF NOT EXISTS signup_codes (
 -- Add index for faster lookup by code
 CREATE INDEX IF NOT EXISTS idx_signup_codes_code ON signup_codes (code);
 
--- Add index for faster lookup by user_id
-CREATE INDEX IF NOT EXISTS idx_signup_codes_user_id ON signup_codes (user_id);
-
 -- Add RLS policy for signup_codes table
 ALTER TABLE signup_codes ENABLE ROW LEVEL SECURITY;
 
--- Policy: Allow authenticated users to read their own signup codes (if applicable)
-CREATE POLICY "Allow authenticated users to read their own signup codes"
-ON signup_codes FOR SELECT
-TO authenticated
-USING (auth.uid() = user_id);
+-- Create new policies based on permissions
+-- This uses the check_permission function defined in 04-create-helper-functions.sql
 
--- Policy: Allow service role to manage all signup codes
-CREATE POLICY "Allow service role to manage signup codes"
-ON signup_codes FOR ALL
-TO service_role
-USING (TRUE) WITH CHECK (TRUE);
+-- Allow users with 'read_signup_codes' permission to view all codes
+CREATE POLICY "Allow authorized users to view signup codes"
+ON public.signup_codes FOR SELECT
+USING (check_permission('users.read_signup_codes'));
 
--- Policy: Allow anonymous users to verify codes (read only)
-CREATE POLICY "Allow anonymous users to verify codes"
-ON signup_codes FOR SELECT
-TO anon
-USING (TRUE);
+-- Allow users with 'generate_signup_code' permission to create codes
+CREATE POLICY "Allow authorized users to create signup codes"
+ON public.signup_codes FOR INSERT
+WITH CHECK (check_permission('users.generate_signup_code'));
 
--- Policy: Allow authenticated users to update their own signup codes (e.g., mark as used)
-CREATE POLICY "Allow authenticated users to update their own signup codes"
-ON signup_codes FOR UPDATE
-TO authenticated
-USING (get_current_user_id() = user_id) WITH CHECK (get_current_user_id() = user_id);
+-- Allow users with 'delete_signup_code' permission to delete codes
+CREATE POLICY "Allow authorized users to delete signup codes"
+ON public.signup_codes FOR DELETE
+USING (check_permission('users.delete_signup_code'));
+
+-- Allow the system (or an admin) to update codes (e.g., mark as used)
+-- This is a broad policy for simplicity; could be narrowed if needed.
+CREATE POLICY "Allow authorized users to update signup codes"
+ON public.signup_codes FOR UPDATE
+USING (check_permission('users.update_signup_code')); -- Assumes this permission exists or will be created
+
+-- Allow anonymous users to read a code for verification purposes
+CREATE POLICY "Allow anonymous read for verification"
+ON public.signup_codes FOR SELECT
+USING (true);

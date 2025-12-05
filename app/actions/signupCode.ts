@@ -28,36 +28,20 @@ async function generateUniqueSixDigitCode(): Promise<string> {
 }
 
 export async function createSignupCode(
-  userId: string,
-  expirationDuration: string // e.g., '1h', '24h', '7d'
+  roleId: string,
+  expirationInMinutes: number
 ): Promise<SignupCode> {
   const supabase = await getSupabaseServerClient()
 
-  // Calculate expires_at
-  const now = new Date()
-  let expiresAt = new Date(now)
-
-  const durationValue = parseInt(expirationDuration.slice(0, -1))
-  const durationUnit = expirationDuration.slice(-1)
-
-  switch (durationUnit) {
-    case 'h':
-      expiresAt.setHours(now.getHours() + durationValue)
-      break
-    case 'd':
-      expiresAt.setDate(now.getDate() + durationValue)
-      break
-    // Add more cases as needed (e.g., 'm' for minutes)
-    default:
-      throw new Error('Invalid expiration duration unit. Use h or d.')
-  }
+  const expiresAt = new Date()
+  expiresAt.setMinutes(expiresAt.getMinutes() + expirationInMinutes)
 
   const uniqueCode = await generateUniqueSixDigitCode();
 
   const { data, error } = await supabase
     .from('signup_codes')
     .insert({
-      user_id: userId,
+      role_id: roleId,
       code: uniqueCode,
       expires_at: expiresAt.toISOString(),
     })
@@ -72,16 +56,16 @@ export async function createSignupCode(
   return data as SignupCode
 }
 
-export async function markSignupCodeAsUsed(codeId: string): Promise<void> {
+export async function deleteSignupCode(codeId: string): Promise<void> {
   const supabase = await getSupabaseServerClient()
 
   const { error } = await supabase
     .from('signup_codes')
-    .update({ is_used: true, updated_at: new Date().toISOString() })
+    .delete()
     .eq('id', codeId)
 
   if (error) {
-    console.error('Error marking signup code as used:', error)
-    throw new Error('Failed to mark signup code as used.')
+    console.error('Error deleting signup code:', error)
+    throw new Error('Failed to delete signup code.')
   }
 }

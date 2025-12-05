@@ -35,7 +35,10 @@ INSERT INTO permissions (name, description, resource, action) VALUES
   ('users.assign_role', 'Assign roles to users', 'users', 'assign_role'),
   ('users.update_password', 'Update a user/s password', 'users', 'update_password'),
   ('users.share', 'Share user credentials or access information', 'users', 'share'),
-  ('users.generate_signup_code', 'Generate one-time signup codes for inactive users', 'users', 'generate_signup_code'),
+  ('users.generate_signup_code', 'Generate signup codes for inviting new users', 'users', 'generate_signup_code'),
+  ('users.read_signup_codes', 'View all generated signup codes', 'users', 'read_signup_codes'),
+  ('users.update_signup_code', 'Update a signup code, e.g., to mark it as used', 'users', 'update_signup_code'),
+  ('users.delete_signup_code', 'Delete an unused signup code', 'users', 'delete_signup_code'),
   ('users.generate_share_link', 'Generate secure, temporary login links for users', 'users', 'generate_share_link')
 ON CONFLICT (name) DO UPDATE SET
   description = EXCLUDED.description,

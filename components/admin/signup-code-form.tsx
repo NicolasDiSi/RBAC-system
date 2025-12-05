@@ -11,23 +11,24 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { createSignupCode } from '@/app/actions/signupCode'
+import type { Role } from '@/lib/data/types/database'
 
 const formSchema = z.object({
-  userId: z.string().min(1, { message: 'Please select a user.' }),
-  expirationDuration: z.string().transform(Number).pipe(z.number().min(1, { message: 'Duration must be at least 1 minute.' })),
+  roleId: z.string().min(1, { message: 'Please select a role.' }),
+  expirationDuration: z.coerce.number().min(1, { message: 'Duration must be at least 1 minute.' }),
 })
 
 interface SignupCodeFormProps {
-  users: { id: string; name: string; email: string }[]
+  roles: Role[]
   onSuccess?: () => void
   onCancel?: () => void
 }
 
-export const SignupCodeForm: FC<SignupCodeFormProps> = ({ users, onSuccess, onCancel }) => {
+export const SignupCodeForm: FC<SignupCodeFormProps> = ({ roles, onSuccess, onCancel }) => {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      userId: '',
+      roleId: '',
       expirationDuration: 60, // Default to 60 minutes
     },
   })
@@ -36,7 +37,8 @@ export const SignupCodeForm: FC<SignupCodeFormProps> = ({ users, onSuccess, onCa
 
   const handleFormSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
-      await createSignupCode(values.userId, values.expirationDuration)
+      await createSignupCode(values.roleId, values.expirationDuration)
+      toast.success('Signup code generated successfully!')
       onSuccess?.()
       form.reset()
     } catch (error: any) {
@@ -49,20 +51,20 @@ export const SignupCodeForm: FC<SignupCodeFormProps> = ({ users, onSuccess, onCa
       <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
         <FormField
           control={form.control}
-          name="userId"
+          name="roleId"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Associate with User</FormLabel>
+              <FormLabel>Assign Role</FormLabel>
               <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select a user" />
+                    <SelectValue placeholder="Select a role for the new user" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {users.map((user) => (
-                    <SelectItem key={user.id} value={user.id}>
-                      {user.name} ({user.email})
+                  {roles.map((role) => (
+                    <SelectItem key={role.id} value={role.id}>
+                      {role.name}
                     </SelectItem>
                   ))}
                 </SelectContent>

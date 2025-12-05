@@ -35,11 +35,13 @@ import { SignupCodeForm } from './signup-code-form'
 import { deleteSignupCode } from '@/app/actions/signupCode'
 import { Badge } from '@/components/ui/badge'
 import { format } from 'date-fns'
+import type { Role } from '@/lib/data/types/database'
 
 interface SignupCode {
   id: string
   code: string
-  user_id: string
+  role_id: string | null
+  used_by_user_id: string | null
   expires_at: string
   is_used: boolean
   used_at: string | null
@@ -57,7 +59,7 @@ interface Permissions {
   canDelete: boolean
 }
 
-export function SignupCodesTable({ signupCodes, users, permissions }: { signupCodes: SignupCode[]; users: User[]; permissions: Permissions }) {
+export function SignupCodesTable({ signupCodes = [], users = [], roles = [], permissions }: { signupCodes: SignupCode[]; users: User[]; roles: Role[]; permissions: Permissions }) {
   const router = useRouter()
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
@@ -92,9 +94,16 @@ export function SignupCodesTable({ signupCodes, users, permissions }: { signupCo
     }
   }
 
-  const getAssociatedUserName = (userId: string) => {
+  const getAssignedRoleName = (roleId: string | null) => {
+    if (!roleId) return 'N/A'
+    const role = roles.find(r => r.id === roleId)
+    return role ? role.name : 'Unknown Role'
+  }
+
+  const getUsedByUserName = (userId: string | null) => {
+    if (!userId) return 'N/A'
     const user = users.find(u => u.id === userId)
-    return user ? `${user.name} (${user.email})` : 'N/A'
+    return user ? `${user.name} (${user.email})` : 'Unknown User'
   }
 
   return (
@@ -111,9 +120,10 @@ export function SignupCodesTable({ signupCodes, users, permissions }: { signupCo
         <TableHeader>
           <TableRow>
             <TableHead>Code</TableHead>
-            <TableHead>Associated User</TableHead>
-            <TableHead>Expires At</TableHead>
+            <TableHead>Assigned Role</TableHead>
             <TableHead>Status</TableHead>
+            <TableHead>Used By</TableHead>
+            <TableHead>Expires At</TableHead>
             <TableHead>Created At</TableHead>
             <TableHead>Actions</TableHead>
           </TableRow>
@@ -122,16 +132,17 @@ export function SignupCodesTable({ signupCodes, users, permissions }: { signupCo
           {signupCodes.map((code) => (
             <TableRow key={code.id}>
               <TableCell className="font-mono">{code.code}</TableCell>
-              <TableCell>{getAssociatedUserName(code.user_id)}</TableCell>
-              <TableCell>{format(new Date(code.expires_at), 'PPP p')}</TableCell>
+              <TableCell>{getAssignedRoleName(code.role_id)}</TableCell>
               <TableCell>
                 <Badge variant={code.is_used ? 'secondary' : (new Date(code.expires_at) < new Date() ? 'destructive' : 'default')}>
-                  {code.is_used ? `Used (${format(new Date(code.used_at!), 'PPP p')})` : (new Date(code.expires_at) < new Date() ? 'Expired' : 'Active')}
+                  {code.is_used ? `Used` : (new Date(code.expires_at) < new Date() ? 'Expired' : 'Active')}
                 </Badge>
               </TableCell>
+              <TableCell>{getUsedByUserName(code.used_by_user_id)}</TableCell>
+              <TableCell>{format(new Date(code.expires_at), 'PPP p')}</TableCell>
               <TableCell>{format(new Date(code.created_at), 'PPP p')}</TableCell>
               <TableCell>
-                {permissions.canDelete && (
+                {permissions.canDelete && !code.is_used && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" className="h-8 w-8 p-0">
@@ -161,7 +172,7 @@ export function SignupCodesTable({ signupCodes, users, permissions }: { signupCo
             <DialogTitle>Generate New Signup Code</DialogTitle>
           </DialogHeader>
           <SignupCodeForm
-            users={users}
+            roles={roles}
             onSuccess={handleGenerateSuccess}
             onCancel={() => setIsFormOpen(false)}
           />

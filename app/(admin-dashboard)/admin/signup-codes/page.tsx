@@ -3,7 +3,8 @@ import { checkPermission } from "@/lib/services/auth/permissions";
 import { redirect } from "next/navigation";
 import { getAllSignupCodes } from "@/lib/data/signupCode";
 import { SignupCodesTable } from "@/components/admin/signup-codes-table";
-import { UserDAO } from "@/lib/data/user"; // To get users for signup code generation
+import { UserDAO } from "@/lib/data/user";
+import { RoleDAO } from "@/lib/data/role";
 
 export default async function AdminSignupCodesPage() {
   await enforceAuthentication();
@@ -14,7 +15,8 @@ export default async function AdminSignupCodesPage() {
   }
 
   const signupCodes = await getAllSignupCodes();
-  const users = await UserDAO.getAll(); // Fetch all users for the form
+  const users = await UserDAO.getAll();
+  const roles = await RoleDAO.getAll();
 
   const permissions = {
     canGenerate: await checkPermission("users.generate_signup_code"),
@@ -29,7 +31,12 @@ export default async function AdminSignupCodesPage() {
           Generate, view, and manage signup codes for user registration.
         </p>
       </div>
-      <SignupCodesTable signupCodes={signupCodes || []} users={users || []} permissions={permissions} />
+      <SignupCodesTable
+        signupCodes={signupCodes}
+        users={users}
+        roles={roles}
+        permissions={permissions}
+      />
     </div>
   );
 }

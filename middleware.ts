@@ -6,7 +6,7 @@ export async function middleware(request: NextRequest) {
 
   // Allow public routes and API routes to pass through.
   // This is a more robust check than a simple array inclusion.
-  const publicRoutes = ["/auth/login", "/auth/signup", "/auth/recover-password", "/api/"];
+  const publicRoutes = ["/auth/login", "/auth/signup", "/auth/recover-password", "/auth/enter-code", "/api/"];
   if (publicRoutes.some(path => pathname.startsWith(path))) {
     return NextResponse.next();
   }

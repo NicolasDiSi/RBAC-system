@@ -57,6 +57,12 @@ const navLinkGroups = [
         href: "/admin/roles",
         permission: "roles.read",
       },
+      {
+        title: "Sign Up Codes",
+        icon: "CodeSquare",
+        href: "/admin/signup-codes",
+        permission: "users.read_signup_codes",
+      },
     ],
   },
 ];

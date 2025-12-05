@@ -74,13 +74,11 @@ WITH CHECK (can_create_share_token());
 -- when the user is not yet logged in.
 CREATE POLICY "Allow anonymous users to read share tokens"
 ON public.share_tokens FOR SELECT
-TO anon
 USING (TRUE);
 
 -- Policy: Allow authenticated users to see their own tokens
 CREATE POLICY "Allow authenticated users to view their own share tokens"
 ON public.share_tokens FOR SELECT
-TO authenticated
 USING (get_current_user_id() = user_id);
 
 -- Policy: Allow authenticated users to update their own share tokens (e.g., mark as used)
@@ -88,7 +86,6 @@ USING (get_current_user_id() = user_id);
 -- kept for completeness and potential future use cases.
 CREATE POLICY "Allow authenticated users to update their own share tokens"
 ON public.share_tokens FOR UPDATE
-TO authenticated
 USING (get_current_user_id() = user_id);
 
 DO $$
