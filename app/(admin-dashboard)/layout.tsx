@@ -5,6 +5,14 @@ import { SidebarProvider } from "@/lib/context/SidebarContext";
 import { UserProfile } from "@/components/dashboard/user-profile";
 import { getAuthenticatedUser } from "@/lib/services/auth/user";
 import { checkPermission } from "@/lib/services/auth/permissions";
+import { PermissionGate } from "@/components/auth/permission-gate";
+
+type NavLink = {
+  title: string;
+  icon: string;
+  href: string;
+  permission: string;
+};
 
 const navLinkGroups = [
   {
@@ -79,19 +87,20 @@ export default async function AdminDashboardLayout({
     return null;
   }
 
-  const allowedLinkGroups = [];
-  for (const group of navLinkGroups) {
-    const allowedLinks = [];
-    for (const link of group.links) {
-      const hasPerm = await checkPermission(link.permission);
-      if (hasPerm) {
-        allowedLinks.push(link);
-      }
-    }
-    if (allowedLinks.length > 0) {
-      allowedLinkGroups.push({ ...group, links: allowedLinks });
-    }
-  }
+  const allowedLinkGroups = await Promise.all(
+    navLinkGroups.map(async (group) => {
+      const allowedLinks = (
+        await Promise.all(
+          group.links.map(async (link) => {
+            const hasPerm = await checkPermission(link.permission);
+            return hasPerm ? link : null;
+          })
+        )
+      ).filter((link): link is NavLink => link !== null);
+
+      return { ...group, links: allowedLinks };
+    })
+  ).then((groups) => groups.filter((group) => group.links.length > 0));
 
   return (
     <SidebarProvider>

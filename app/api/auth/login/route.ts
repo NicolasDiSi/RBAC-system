@@ -26,7 +26,7 @@ export async function POST(request: Request) {
     }
 
     if (!user) {
-      return NextResponse.json({ message: "Invalid credentials" }, { status: 401 });
+      return NextResponse.json({ message: "Credentials not found" }, { status: 401 });
     }
 
     if (!user.hashed_password) {
