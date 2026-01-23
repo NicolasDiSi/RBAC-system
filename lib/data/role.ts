@@ -1,87 +1,92 @@
-import { getSupabaseServiceRoleClient } from "@/lib/services/supabase/server";
-import { executeQuery } from "./query";
-import { Role, Permission } from "./types/database";
+import { sql, eq, inArray } from 'drizzle-orm';
+import { getDb } from '../db';
+import schema from '../db/schema';
 
-export const RoleDAO = {
-  async getAll(): Promise<Role[]> {
-    const supabase = await getSupabaseServiceRoleClient();
-    const query = supabase.from("roles").select("id, name, description");
-    return executeQuery(query);
-  },
+const { roles, permissions, rolePermissions } = schema;
 
-  async getAllWithPermissionCount(): Promise<any[]> {
-    const supabase = await getSupabaseServiceRoleClient();
-    const query = supabase
-      .from("roles")
-      .select(
-        `
-        *,
-        role_permissions(count)
-      `
-      )
-      .order("name");
-    return executeQuery(query);
-  },
+export type Role = typeof roles.$inferSelect;
+export type Permission = typeof permissions.$inferSelect;
+export type NewRole = typeof roles.$inferInsert;
 
-  async getAllPermissions(): Promise<Permission[]> {
-    const supabase = await getSupabaseServiceRoleClient();
-    const query = supabase.from("permissions").select("*").order("resource, action");
-    return executeQuery(query);
-  },
+export async function getAllRoles(): Promise<Role[]> {
+  const db = await getDb();
+  return db.select().from(roles).orderBy(roles.name);
+}
 
-  async getById(roleId: string): Promise<Role | null> {
-    const supabase = await getSupabaseServiceRoleClient();
-    const query = supabase.from("roles").select("*").eq("id", roleId).single();
-    return executeQuery(query);
-  },
+export async function getAllRolesWithPermissionCount(): Promise<any[]> {
+    const db = await getDb();
+    const result = await db
+      .select({
+        id: roles.id,
+        name: roles.name,
+        description: roles.description,
+        createdAt: roles.createdAt,
+        updatedAt: roles.updatedAt,
+        permissionCount: sql<number>`count(${rolePermissions.permissionId})`.mapWith(Number),
+      })
+      .from(roles)
+      .leftJoin(rolePermissions, eq(roles.id, rolePermissions.roleId))
+      .groupBy(roles.id)
+      .orderBy(roles.name);
+    return result;
+}
 
-  async create(roleData: { name: string; description?: string }): Promise<Role> {
-    const supabase = await getSupabaseServiceRoleClient();
-    const query = supabase.from("roles").insert(roleData).select().single();
-    return executeQuery(query);
-  },
+export async function getAllPermissions(): Promise<Permission[]> {
+  const db = await getDb();
+  return db.select().from(permissions).orderBy(permissions.resource, permissions.action);
+}
 
-  async update(roleId: string, roleData: { name?: string; description?: string }): Promise<Role> {
-    const supabase = await getSupabaseServiceRoleClient();
-    const query = supabase.from("roles").update(roleData).eq("id", roleId).select().single();
-    return executeQuery(query);
-  },
+export async function getRoleById(roleId: string): Promise<Role | undefined> {
+  const db = await getDb();
+  return db.query.roles.findFirst({
+    where: eq(roles.id, roleId),
+  });
+}
 
-  async delete(roleId: string): Promise<void> {
-    const supabase = await getSupabaseServiceRoleClient();
-    const query = supabase.from("roles").delete().eq("id", roleId);
-    await executeQuery(query);
-  },
+export async function createRole(roleData: NewRole): Promise<Role> {
+  const db = await getDb();
+  const [newRole] = await db.insert(roles).values(roleData).returning();
+  return newRole;
+}
 
-  async updatePermissions(roleId: string, permissionIds: string[]): Promise<void> {
-    const supabase = await getSupabaseServiceRoleClient();
-    
-    // Delete existing permissions for this role
-    const deleteQuery = supabase.from("role_permissions").delete().eq("role_id", roleId);
-    await executeQuery(deleteQuery);
+export async function updateRole(roleId: string, roleData: Partial<NewRole>): Promise<Role> {
+  const db = await getDb();
+  const [updatedRole] = await db
+    .update(roles)
+    .set({ ...roleData, updatedAt: new Date() })
+    .where(eq(roles.id, roleId))
+    .returning();
+  return updatedRole;
+}
 
-    // Insert new permissions
-    if (permissionIds.length > 0) {
-      const rolePermissions = permissionIds.map((permissionId) => ({
-        role_id: roleId,
-        permission_id: permissionId,
-      }));
-      const insertQuery = supabase.from("role_permissions").insert(rolePermissions);
-      await executeQuery(insertQuery);
-    }
-  },
+export async function deleteRole(roleId: string): Promise<Role> {
+    const db = await getDb();
+    const [deletedRole] = await db.delete(roles).where(eq(roles.id, roleId)).returning();
+    return deletedRole;
+}
 
-  async getPermissions(roleId: string): Promise<string[]> {
-    const supabase = await getSupabaseServiceRoleClient();
-    const { data, error } = await supabase
-      .from("role_permissions")
-      .select("permission_id")
-      .eq("role_id", roleId);
+export async function getRolePermissions(roleId: string): Promise<string[]> {
+    const db = await getDb();
+    const results = await db
+      .select({ permissionId: rolePermissions.permissionId })
+      .from(rolePermissions)
+      .where(eq(rolePermissions.roleId, roleId));
+    return results.map((rp) => rp.permissionId);
+}
 
-    if (error) {
-      console.error("Error fetching role permissions:", error);
-      return [];
-    }
-    return data.map((rp) => rp.permission_id);
-  },
-};
+export async function updateRolePermissions(roleId: string, permissionIds: string[]): Promise<void> {
+    const db = await getDb();
+    await db.transaction(async (tx) => {
+        // Delete existing permissions
+        await tx.delete(rolePermissions).where(eq(rolePermissions.roleId, roleId));
+
+        // Insert new permissions
+        if (permissionIds.length > 0) {
+            const newPermissions = permissionIds.map((permissionId) => ({
+                roleId: roleId,
+                permissionId: permissionId,
+            }));
+            await tx.insert(rolePermissions).values(newPermissions);
+        }
+    });
+}

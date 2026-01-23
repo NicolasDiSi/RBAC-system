@@ -1,8 +1,7 @@
-
 import { NextResponse } from "next/server";
 import { compare } from "bcrypt";
-import { getSupabaseServiceRoleClient } from "@/lib/services/supabase/server";
 import { createSession } from "@/lib/services/auth/session";
+import { getUserByEmail } from "@/lib/data/user";
 
 export async function POST(request: Request) {
   try {
@@ -12,41 +11,30 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: "Email and password are required" }, { status: 400 });
     }
 
-    const supabase = getSupabaseServiceRoleClient();
-
-    const { data: user, error } = await supabase
-      .from("users")
-      .select("*")
-      .eq("email", email)
-      .single();
-
-
-    if (error) {
-      console.error("Error fetching credentials", error);
-    }
+    const user = await getUserByEmail(email);
 
     if (!user) {
       return NextResponse.json({ message: "Credentials not found" }, { status: 401 });
     }
 
-    if (!user.hashed_password) {
+    if (!user.hashedPassword) {
         return NextResponse.json({ message: "Login with your social provider" }, { status: 401 });
     }
 
-    const isValid = await compare(password, user.hashed_password);
+    const isValid = await compare(password, user.hashedPassword);
 
     if (!isValid) {
       return NextResponse.json({ message: "Invalid credentials" }, { status: 401 });
     }
 
-    if (!user.is_active) {
+    if (!user.isActive) {
       return NextResponse.json({ message: "Account is not active. Please contact an administrator." }, { status: 403 });
     }
 
     // Create a session for the user
-    await createSession(user.id, user.email, user.role_id);
+    await createSession(user.id, user.email, user.roleId);
 
-    const { hashed_password, ...userWithoutPassword } = user;
+    const { hashedPassword, ...userWithoutPassword } = user;
 
 
     return NextResponse.json({ message: "Login successful", user: userWithoutPassword }, { status: 200 });

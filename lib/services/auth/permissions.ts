@@ -1,23 +1,29 @@
 import { cache } from 'react'
-import { getSupabaseServiceRoleClient } from '../supabase/server'
 import { getAuthenticatedUser } from "./user"
+import { getRolePermissions } from '@/lib/data/role';
+import { getDb } from '@/lib/db';
+import schema from '@/lib/db/schema';
+import { inArray } from 'drizzle-orm';
+
+const { permissions: permissionsTable } = schema;
+
 
 export const getUserPermissions = cache(async (roleId: string | null) => {
-  const supabase = await getSupabaseServiceRoleClient()
-
   // If the user has no role, they have no permissions.
   if (!roleId) {
     return []
   }
 
-  const { data: permissions } = await supabase
-    .from("role_permissions")
-    .select(`
-      permission:permissions(*)
-    `)
-    .eq("role_id", roleId)
+  const permissionIds = await getRolePermissions(roleId);
 
-  return permissions?.map((rp: any) => rp.permission) || []
+  if (permissionIds.length === 0) {
+    return [];
+  }
+
+  const db = await getDb();
+  const permissions = await db.select().from(permissionsTable).where(inArray(permissionsTable.id, permissionIds));
+
+  return permissions;
 })
 
 export async function hasPermission(roleId: string | null, permissionName: string): Promise<boolean> {
@@ -30,13 +36,13 @@ export async function hasPermission(roleId: string | null, permissionName: strin
  * This is optimized for use in middleware.
  */
 export async function checkPermissionForUser(
-  user: { id: string; is_active: boolean; role_id: string | null } | null,
+  user: { id: string; isActive: boolean; roleId: string | null } | null,
   permissionName: string
 ): Promise<boolean> {
-  if (!user || !user.is_active) {
+  if (!user || !user.isActive) {
     return false
   }
-  return await hasPermission(user.role_id, permissionName)
+  return await hasPermission(user.roleId, permissionName)
 }
 
 /**
@@ -45,5 +51,16 @@ export async function checkPermissionForUser(
  */
 export async function checkPermission(permissionName: string): Promise<boolean> {
   const user = await getAuthenticatedUser()
-  return checkPermissionForUser(user, permissionName)
+  // The user object from getAuthenticatedUser has roleId, not role_id
+  const roleId = user?.role?.id ?? null;
+  if (!user) return false;
+
+  // We need to pass the user object in a way that matches checkPermissionForUser
+  const userForCheck = {
+    id: user.id,
+    isActive: user.isActive ?? false,
+    roleId: roleId
+  };
+
+  return checkPermissionForUser(userForCheck, permissionName)
 }
