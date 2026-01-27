@@ -2,8 +2,10 @@
 
 import { revalidatePath } from "next/cache"
 import { getAuthenticatedUser } from "@/lib/services/auth/user"
-import { getSupabaseServerClient } from "@/lib/services/supabase/server"
 import { checkPermission } from "@/lib/services/auth/permissions"
+import { getDb } from "@/lib/db"
+import { obras, asignacionesContratos, historialRelacionLaboral, empleados } from "@/lib/db/schema"
+import { eq } from "drizzle-orm"
 import { z } from "zod";
 import { createProjectSchema } from "@/lib/validations/project-schema"
 import { createAssignmentSchema } from "@/lib/validations/assignment-schema"
@@ -15,8 +17,6 @@ export async function createProject(data: any) {
   if (!hasPermission) {
     throw new Error("Unauthorized")
   }
-
-  const supabase = await getSupabaseServerClient()
 
   let validatedData;
   try {
@@ -36,18 +36,17 @@ export async function createProject(data: any) {
     return { success: false, message: "An unknown validation error occurred." };
   }
 
-  const { data: project, error } = await supabase
-    .from("obras")
-    .insert({
-      ...validatedData,
-      created_by: user?.id,
-    })
-    .select()
-    .single()
-
-  if (error) {
-    throw new Error(error.message)
-  }
+  const db = await getDb();
+  const [project] = await db.insert(obras).values({
+      nombre: validatedData.nombre,
+      codigo: validatedData.codigo,
+      ubicacion: validatedData.ubicacion,
+      fechaInicio: validatedData.fecha_inicio,
+      fechaFinEstimada: validatedData.fecha_fin_estimada,
+      presupuesto: validatedData.presupuesto?.toString(),
+      descripcion: validatedData.descripcion,
+      createdBy: user?.id,
+    }).returning();
 
   revalidatePath("/projects")
   return project
@@ -59,8 +58,6 @@ export async function createAssignment(data: any) {
   if (!hasPermission) {
     throw new Error("Unauthorized")
   }
-
-  const supabase = await getSupabaseServerClient()
 
   let validatedData;
   try {
@@ -80,33 +77,36 @@ export async function createAssignment(data: any) {
     return { success: false, message: "An unknown validation error occurred." };
   }
 
+  const db = await getDb();
+
   // Get employee details for history
-  const { data: employee } = await supabase.from("empleados").select("*").eq("id", validatedData.empleado_id).single()
+  const employee = await db.query.empleados.findFirst({
+    where: eq(empleados.id, validatedData.empleado_id)
+  });
 
-  const { data: assignment, error } = await supabase
-    .from("asignaciones_contratos")
-    .insert({
-      ...validatedData,
+  const [assignment] = await db.insert(asignacionesContratos).values({
+      empleadoId: validatedData.empleado_id,
+      obraId: validatedData.obra_id,
+      fechaInicio: validatedData.fecha_inicio,
+      fechaFin: validatedData.fecha_fin,
+      tipoContrato: validatedData.tipo_contrato,
+      categoria: validatedData.categoria,
+      salario: validatedData.salario?.toString(),
+      observaciones: validatedData.observaciones,
       estado: validatedData.estado || "activo", // Use validatedData.estado if provided, otherwise default
-      created_by: user?.id,
-    })
-    .select()
-    .single()
-
-  if (error) {
-    throw new Error(error.message)
-  }
+      createdBy: user?.id,
+    }).returning();
 
   // Create history entry for assignment
-  await supabase.from("historial_relacion_laboral").insert({
-    empleado_id: validatedData.empleado_id,
-    fecha_evento: validatedData.fecha_inicio,
-    tipo_evento: "cambio_obra",
+  await db.insert(historialRelacionLaboral).values({
+    empleadoId: validatedData.empleado_id,
+    fechaEvento: validatedData.fecha_inicio,
+    tipoEvento: "cambio_obra",
     descripcion: `Assigned to project with category ${validatedData.categoria || "N/A"}`,
-    obra_id: validatedData.obra_id,
-    categoria_nueva: validatedData.categoria,
-    created_by: user?.id,
-  })
+    obraId: validatedData.obra_id,
+    categoriaNueva: validatedData.categoria,
+    createdBy: user?.id,
+  });
 
   revalidatePath(`/projects/${validatedData.obra_id}`)
   revalidatePath(`/employees/${validatedData.empleado_id}`)
@@ -120,43 +120,35 @@ export async function endAssignment(data: { assignment_id: string, fecha_fin: st
     throw new Error("Unauthorized");
   }
 
-  const supabase = await getSupabaseServerClient();
+  const db = await getDb();
   const validatedData = endAssignmentSchema.parse(data);
 
-  const { data: existingAssignment, error: fetchError } = await supabase
-    .from("asignaciones_contratos")
-    .select("*")
-    .eq("id", validatedData.assignment_id)
-    .single();
+  const existingAssignment = await db.query.asignacionesContratos.findFirst({
+    where: eq(asignacionesContratos.id, validatedData.assignment_id)
+  });
 
-  if (fetchError) {
-    throw new Error(fetchError.message);
+  if (!existingAssignment) {
+    throw new Error("Assignment not found");
   }
-
-  if (existingAssignment.fecha_fin) {
+  if (existingAssignment.fechaFin) {
     throw new Error("Cannot edit an assignment that has an end date.");
   }
 
-  const { error: updateError } = await supabase
-    .from("asignaciones_contratos")
-    .update({ fecha_fin: validatedData.fecha_fin, estado: "finalizado" })
-    .eq("id", validatedData.assignment_id);
+  await db.update(asignacionesContratos)
+    .set({ fechaFin: validatedData.fecha_fin, estado: "finalizado" })
+    .where(eq(asignacionesContratos.id, validatedData.assignment_id));
 
-  if (updateError) {
-    throw new Error(updateError.message);
-  }
-
-  await supabase.from("historial_relacion_laboral").insert({
-    empleado_id: existingAssignment.empleado_id,
-    fecha_evento: validatedData.fecha_fin,
-    tipo_evento: "egreso",
+  await db.insert(historialRelacionLaboral).values({
+    empleadoId: existingAssignment.empleadoId,
+    fechaEvento: validatedData.fecha_fin,
+    tipoEvento: "egreso",
     descripcion: `Assignment ended for project`,
-    obra_id: existingAssignment.obra_id,
-    created_by: user?.id,
+    obraId: existingAssignment.obraId,
+    createdBy: user?.id,
   });
 
-  revalidatePath(`/projects/${existingAssignment.obra_id}`);
-  revalidatePath(`/employees/${existingAssignment.empleado_id}`);
+  revalidatePath(`/projects/${existingAssignment.obraId}`);
+  revalidatePath(`/employees/${existingAssignment.empleadoId}`);
 
   return {
     ...existingAssignment,
@@ -171,37 +163,35 @@ export async function updateAssignment(assignmentId: string, data: any) {
     throw new Error("Unauthorized");
   }
 
-  const supabase = await getSupabaseServerClient();
+  const db = await getDb();
 
-  const { data: existingAssignment, error: fetchError } = await supabase
-    .from("asignaciones_contratos")
-    .select("fecha_fin")
-    .eq("id", assignmentId)
-    .single();
+  const existingAssignment = await db.query.asignacionesContratos.findFirst({
+    where: eq(asignacionesContratos.id, assignmentId),
+    columns: { fechaFin: true }
+  });
 
-  if (fetchError) {
-    throw new Error(fetchError.message);
-  }
-
-  if (existingAssignment?.fecha_fin) {
+  if (existingAssignment?.fechaFin) {
     throw new Error("Cannot edit an assignment that has an end date.");
   }
 
   const validatedData = createAssignmentSchema.parse(data);
 
-  const { data: updatedAssignment, error } = await supabase
-    .from("asignaciones_contratos")
-    .update(validatedData)
-    .eq("id", assignmentId)
-    .select()
-    .single();
+  const [updatedAssignment] = await db.update(asignacionesContratos)
+    .set({
+      empleadoId: validatedData.empleado_id,
+      obraId: validatedData.obra_id,
+      fechaInicio: validatedData.fecha_inicio,
+      fechaFin: validatedData.fecha_fin,
+      tipoContrato: validatedData.tipo_contrato,
+      categoria: validatedData.categoria,
+      salario: validatedData.salario?.toString(),
+      observaciones: validatedData.observaciones,
+    })
+    .where(eq(asignacionesContratos.id, assignmentId))
+    .returning();
 
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  revalidatePath(`/projects/${updatedAssignment.obra_id}`);
-  revalidatePath(`/employees/${updatedAssignment.empleado_id}`);
+  revalidatePath(`/projects/${updatedAssignment.obraId}`);
+  revalidatePath(`/employees/${updatedAssignment.empleadoId}`);
 
   return updatedAssignment;
 }
@@ -212,19 +202,21 @@ export async function updateProject(projectId: string, data: any) {
     throw new Error("Unauthorized");
   }
 
-  const supabase = await getSupabaseServerClient();
+  const db = await getDb();
   const validatedData = createProjectSchema.parse(data);
 
-  const { data: updatedProject, error } = await supabase
-    .from("obras")
-    .update(validatedData)
-    .eq("id", projectId)
-    .select()
-    .single();
-
-  if (error) {
-    throw new Error(error.message);
-  }
+  const [updatedProject] = await db.update(obras)
+    .set({
+      nombre: validatedData.nombre,
+      codigo: validatedData.codigo,
+      ubicacion: validatedData.ubicacion,
+      fechaInicio: validatedData.fecha_inicio,
+      fechaFinEstimada: validatedData.fecha_fin_estimada,
+      presupuesto: validatedData.presupuesto?.toString(),
+      descripcion: validatedData.descripcion,
+    })
+    .where(eq(obras.id, projectId))
+    .returning();
 
   revalidatePath("/projects");
   revalidatePath(`/projects/${updatedProject.id}`);

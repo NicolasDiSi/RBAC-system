@@ -1,9 +1,11 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
-import { getSupabaseServerClient } from "@/lib/services/supabase/server"
 import { checkPermission } from "@/lib/services/auth/permissions"
 import { getAuthenticatedUser } from "@/lib/services/auth/user"
+import { getDb } from "@/lib/db"
+import { empleados, historialRelacionLaboral } from "@/lib/db/schema"
+import { eq } from "drizzle-orm"
 
 import { z } from "zod";
 import { createEmployeeSchema, editEmployeeSchema } from "@/lib/validations/employee-schema";
@@ -16,7 +18,6 @@ export async function createEmployee(data: any) {
   }
 
   const user = await getAuthenticatedUser()
-  const supabase = await getSupabaseServerClient()
 
   let validatedData;
   try {
@@ -36,32 +37,41 @@ export async function createEmployee(data: any) {
     return { success: false, message: "An unknown validation error occurred.", errors: null };
   }
 
-  const { data: employee, error } = await supabase
-    .from("empleados")
-    .insert({
-      ...validatedData,
-      estado: "activo",
-      created_by: user?.id,
-    })
-    .select()
-    .single()
+  try {
+    const db = await getDb();
+    const [employee] = await db.insert(empleados).values({
+        nombre: validatedData.nombre,
+        apellido: validatedData.apellido,
+        dni: validatedData.dni,
+        /* cuil: validatedData.cuil, */
+        fechaNacimiento: validatedData.fecha_nacimiento,
+        telefono: validatedData.telefono,
+        email: validatedData.email,
+        direccion: validatedData.direccion,
+        fechaIngreso: validatedData.fecha_ingreso,
+        tipoContrato: validatedData.tipo_contrato,
+        categoria: validatedData.categoria,
+        /* empresaTercera: validatedData.empresa_tercera, */
+        observaciones: validatedData.observaciones,
+        estado: "activo",
+        createdBy: user?.id,
+      }).returning();
 
-  if (error) {
-    return { success: false, message: error.message, errors: null };
+    // Create history entry for employee creation
+    await db.insert(historialRelacionLaboral).values({
+      empleadoId: employee.id,
+      fechaEvento: validatedData.fecha_ingreso,
+      tipoEvento: "ingreso",
+      descripcion: `Employee joined the company as ${validatedData.categoria || "employee"}`,
+      categoriaNueva: validatedData.categoria,
+      createdBy: user?.id,
+    });
+
+    revalidatePath("/employees")
+    return { success: true, message: "Employee created successfully!", errors: null };
+  } catch (error) {
+    return { success: false, message: error instanceof Error ? error.message : "Database error", errors: null };
   }
-
-  // Create history entry for employee creation
-  await supabase.from("historial_relacion_laboral").insert({
-    empleado_id: employee.id,
-    fecha_evento: validatedData.fecha_ingreso,
-    tipo_evento: "ingreso",
-    descripcion: `Employee joined the company as ${validatedData.categoria || "employee"}`,
-    categoria_nueva: validatedData.categoria,
-    created_by: user?.id,
-  })
-
-  revalidatePath("/employees")
-  return { success: true, message: "Employee created successfully!", errors: null };
 }
 
 export async function updateEmployee(id: string, data: any) {
@@ -69,8 +79,6 @@ export async function updateEmployee(id: string, data: any) {
   if (!hasPermission) {
     return { success: false, message: "Unauthorized", errors: null };
   }
-
-  const supabase = await getSupabaseServerClient()
 
   let validatedData;
   try {
@@ -90,18 +98,30 @@ export async function updateEmployee(id: string, data: any) {
     return { success: false, message: "An unknown validation error occurred.", errors: null };
   }
 
-  const { error } = await supabase
-    .from("empleados")
-    .update(validatedData)
-    .eq("id", id)
+  try {
+    const db = await getDb();
+    await db.update(empleados).set({
+        nombre: validatedData.nombre,
+        apellido: validatedData.apellido,
+        dni: validatedData.dni,
+        /* cuil: validatedData.cuil, */
+        fechaNacimiento: validatedData.fecha_nacimiento,
+        telefono: validatedData.telefono,
+        email: validatedData.email,
+        direccion: validatedData.direccion,
+        fechaIngreso: validatedData.fecha_ingreso,
+        tipoContrato: validatedData.tipo_contrato,
+        categoria: validatedData.categoria,
+        /* empresaTercera: validatedData.empresa_tercera, */
+        observaciones: validatedData.observaciones,
+    }).where(eq(empleados.id, id));
 
-  if (error) {
-    return { success: false, message: error.message, errors: null };
+    revalidatePath("/employees")
+    revalidatePath(`/employees/${id}`)
+    return { success: true, message: "Employee updated successfully!", errors: null };
+  } catch (error) {
+    return { success: false, message: error instanceof Error ? error.message : "Database error", errors: null };
   }
-
-  revalidatePath("/employees")
-  revalidatePath(`/employees/${id}`)
-  return { success: true, message: "Employee updated successfully!", errors: null };
 }
 
 export async function deactivateEmployee(employeeId: string, data: any) {
@@ -111,7 +131,6 @@ export async function deactivateEmployee(employeeId: string, data: any) {
   }
 
   const user = await getAuthenticatedUser();
-  const supabase = await getSupabaseServerClient();
 
   let validatedData;
   try {
@@ -131,29 +150,27 @@ export async function deactivateEmployee(employeeId: string, data: any) {
     return { success: false, message: "An unknown validation error occurred.", errors: null };
   }
 
-  const { error } = await supabase
-    .from("empleados")
-    .update({
-      estado: "inactivo",
-      fecha_egreso: validatedData.fecha_egreso,
-    })
-    .eq("id", employeeId);
+  try {
+    const db = await getDb();
+    
+    await db.update(empleados).set({
+        estado: "inactivo",
+        fechaEgreso: validatedData.fecha_egreso, // Already correct, but ensuring consistency
+      }).where(eq(empleados.id, employeeId));
 
-  if (error) {
-    return { success: false, message: error.message, errors: null };
+    // Create history entry for employee deactivation
+    await db.insert(historialRelacionLaboral).values({
+      empleadoId: employeeId,
+      fechaEvento: validatedData.fecha_egreso,
+      tipoEvento: "egreso",
+      descripcion: `Employee deactivated by ${user?.email}`,
+      createdBy: user?.id,
+    });
+
+    revalidatePath("/employees");
+    revalidatePath(`/employees/${employeeId}`);
+    return { success: true, message: "Employee deactivated successfully!", errors: null };
+  } catch (error) {
+    return { success: false, message: error instanceof Error ? error.message : "Database error", errors: null };
   }
-
-  // Create history entry for employee deactivation
-  await supabase.from("historial_relacion_laboral").insert({
-    empleado_id: employeeId,
-    fecha_evento: validatedData.fecha_egreso,
-    tipo_evento: "egreso",
-    descripcion: `Employee deactivated by ${user?.email}`,
-    created_by: user?.id,
-  });
-
-  revalidatePath("/employees");
-  revalidatePath(`/employees/${employeeId}`);
-  return { success: true, message: "Employee deactivated successfully!", errors: null };
 }
-

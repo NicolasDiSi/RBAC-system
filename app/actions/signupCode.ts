@@ -1,25 +1,26 @@
 'use server'
 
-import { getSupabaseServerClient } from '@/lib/services/supabase/server'
-import { SignupCode } from '@/lib/data/types/database'
+import { getDb } from '@/lib/db'
+import { signupCodes } from '@/lib/db/schema'
+import { eq } from 'drizzle-orm'
 
 // Helper to generate a 6-digit alphanumeric code
 async function generateUniqueSixDigitCode(): Promise<string> {
   const characters = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'
   let result = ''
   let isUnique = false
-  const supabase = await getSupabaseServerClient()
+  const db = await getDb()
 
   while (!isUnique) {
     result = ''
     for (let i = 0; i < 6; i++) {
       result += characters.charAt(Math.floor(Math.random() * characters.length))
     }
-    const { data: existingCode } = await supabase
-      .from('signup_codes')
-      .select('id')
-      .eq('code', result)
-      .single()
+    const existingCode = await db.query.signupCodes.findFirst({
+        where: eq(signupCodes.code, result),
+        columns: { id: true }
+    })
+
     if (!existingCode) {
       isUnique = true
     }
@@ -30,42 +31,25 @@ async function generateUniqueSixDigitCode(): Promise<string> {
 export async function createSignupCode(
   roleId: string,
   expirationInMinutes: number
-): Promise<SignupCode> {
-  const supabase = await getSupabaseServerClient()
+): Promise<{ code: string; expiresAt: Date }> {
+  const db = await getDb()
 
   const expiresAt = new Date()
   expiresAt.setMinutes(expiresAt.getMinutes() + expirationInMinutes)
 
   const uniqueCode = await generateUniqueSixDigitCode();
 
-  const { data, error } = await supabase
-    .from('signup_codes')
-    .insert({
-      role_id: roleId,
+  const [data] = await db.insert(signupCodes).values({
+      roleId: roleId,
       code: uniqueCode,
-      expires_at: expiresAt.toISOString(),
-    })
-    .select('*')
-    .single()
+      expiresAt: expiresAt,
+    }).returning();
 
-  if (error) {
-    console.error('Error creating signup code:', error)
-    throw new Error('Failed to create signup code.')
-  }
-
-  return data as SignupCode
+  return { code: data.code, expiresAt: data.expiresAt }
 }
 
 export async function deleteSignupCode(codeId: string): Promise<void> {
-  const supabase = await getSupabaseServerClient()
+  const db = await getDb()
 
-  const { error } = await supabase
-    .from('signup_codes')
-    .delete()
-    .eq('id', codeId)
-
-  if (error) {
-    console.error('Error deleting signup code:', error)
-    throw new Error('Failed to delete signup code.')
-  }
+  await db.delete(signupCodes).where(eq(signupCodes.id, codeId))
 }
