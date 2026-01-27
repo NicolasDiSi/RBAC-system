@@ -194,6 +194,9 @@ export function UsersTable({ users, roles, permissions }) {
       </Table>
       <Dialog open={isUserFormOpen} onOpenChange={setIsUserFormOpen}>
         <DialogContent>
+          <DialogDescription>
+            {editingUser ? 'Edit User' : 'Create New User'}
+          </DialogDescription>
           <DialogHeader>
             <DialogTitle>{editingUser ? 'Edit User' : 'Create New User'}</DialogTitle>
           </DialogHeader>
@@ -213,6 +216,9 @@ export function UsersTable({ users, roles, permissions }) {
       </Dialog>
       <Dialog open={isChangePasswordDialogOpen} onOpenChange={setIsChangePasswordDialogOpen}>
         <DialogContent>
+          <DialogDescription>
+            Change the password for {selectedUser?.name}
+          </DialogDescription>
           <DialogHeader>
             <DialogTitle>Change Password for {selectedUser?.name}</DialogTitle>
             <DialogDescription>
@@ -232,6 +238,9 @@ export function UsersTable({ users, roles, permissions }) {
       </Dialog>
       <Dialog open={isResetPasswordDialogOpen} onOpenChange={setIsResetPasswordDialogOpen}>
         <DialogContent>
+          <DialogDescription>
+            Reset the password for {selectedUser?.name}
+          </DialogDescription>
           <DialogHeader>
             <DialogTitle>Reset Password for {selectedUser?.name}</DialogTitle>
             <DialogDescription>

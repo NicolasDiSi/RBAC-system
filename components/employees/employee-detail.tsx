@@ -275,6 +275,9 @@ export function EmployeeDetail({ employee, assignments, documents, history, perm
       </Tabs>
       <Dialog open={deactivateDialogOpen} onOpenChange={setDeactivateDialogOpen}>
         <DialogContent>
+          <DialogDescription>
+            Are you sure you want to deactivate {employee.nombre} {employee.apellido}?
+          </DialogDescription>
           <DialogHeader>
             <DialogTitle>Deactivate Employee</DialogTitle>
             <DialogDescription>

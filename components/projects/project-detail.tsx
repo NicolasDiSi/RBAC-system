@@ -227,6 +227,9 @@ export function ProjectDetail({ project, assignments, employees, permissions }: 
 							</Button>
 						</DialogTrigger>
 						<DialogContent>
+							<DialogDescription>
+								Assign an employee to this project.
+							</DialogDescription>
 							<DialogHeader>
 								<DialogTitle>Assign Employee to Project</DialogTitle>
 							</DialogHeader>
@@ -381,6 +384,9 @@ export function ProjectDetail({ project, assignments, employees, permissions }: 
 			</Card>
 			<Dialog open={endAssignmentDialogOpen} onOpenChange={setEndAssignmentDialogOpen}>
 				<DialogContent>
+					<DialogDescription>
+					Set the end date for the assignment of {selectedAssignment?.empleado.nombre} {selectedAssignment?.empleado.apellido} to this project.
+					</DialogDescription>
 					<DialogHeader>
 						<DialogTitle>End Assignment</DialogTitle>
 						<DialogDescription>
@@ -406,6 +412,9 @@ export function ProjectDetail({ project, assignments, employees, permissions }: 
 			</Dialog>
 			<Dialog open={editAssignmentDialogOpen} onOpenChange={setEditAssignmentDialogOpen}>
 				<DialogContent>
+					<DialogDescription>
+						Edit Assignment
+					</DialogDescription>
 					<DialogHeader>
 						<DialogTitle>Edit Assignment</DialogTitle>
 					</DialogHeader>

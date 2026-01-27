@@ -18,6 +18,7 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
@@ -153,6 +154,9 @@ export function SignupCodesTable({ signupCodes = [], users = [], roles = [], per
 
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
         <DialogContent>
+          <DialogDescription>
+            Generate a new signup code
+          </DialogDescription>
           <DialogHeader>
             <DialogTitle>Generate New Signup Code</DialogTitle>
           </DialogHeader>

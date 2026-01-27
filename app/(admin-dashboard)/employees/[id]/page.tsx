@@ -5,7 +5,7 @@ import { getEmployeeById, getEmployeeAssignments, getEmployeeHistory } from "@/a
 import { getDocumentsByEmployeeId } from "@/app/actions/documents"
 
 export default async function EmployeeDetailPage({ params }: { params: { id: string } }) {
-  const id = params.id;
+  const { id } = await params;
   const employeeId = String(id);
 
   const permissions = {

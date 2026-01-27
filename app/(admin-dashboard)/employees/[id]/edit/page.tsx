@@ -5,6 +5,7 @@ import { redirect, notFound } from "next/navigation";
 import { getEmployeeById } from "@/app/actions/employees";
 
 export default async function EditEmployeePage({ params }: { params: { id: string } }) {
+  const { id } = await params;
   await enforceAuthentication();
   const canUpdate = await checkPermission("employees.update");
 
@@ -12,7 +13,7 @@ export default async function EditEmployeePage({ params }: { params: { id: strin
     redirect("/unauthorized");
   }
 
-  const employee = await getEmployeeById(params.id);
+  const employee = await getEmployeeById(id);
 
   if (!employee) {
     notFound();

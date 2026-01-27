@@ -19,6 +19,7 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog' // Added Dialog imports
@@ -180,6 +181,9 @@ export function RolesTable({ roles, permissions }: { roles: Role[]; permissions:
 
       <Dialog open={isRoleFormOpen} onOpenChange={setIsRoleFormOpen}>
         <DialogContent>
+          <DialogDescription>
+            {editingRole ? 'Edit Role' : 'Create New Role'}
+          </DialogDescription>
           <DialogHeader>
             <DialogTitle>{editingRole ? 'Edit Role' : 'Create New Role'}</DialogTitle>
           </DialogHeader>
