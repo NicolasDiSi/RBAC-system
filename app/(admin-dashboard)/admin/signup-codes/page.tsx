@@ -3,8 +3,8 @@ import { checkPermission } from "@/lib/services/auth/permissions";
 import { redirect } from "next/navigation";
 import { getAllSignupCodes } from "@/lib/data/signupCode";
 import { SignupCodesTable } from "@/components/admin/signup-codes-table";
-import { UserDAO } from "@/lib/data/user";
-import { RoleDAO } from "@/lib/data/role";
+import { getAllUsers }  from "@/lib/data/user";
+import { getAllRoles } from "@/lib/data/role";
 
 export default async function AdminSignupCodesPage() {
   await enforceAuthentication();
@@ -15,8 +15,8 @@ export default async function AdminSignupCodesPage() {
   }
 
   const signupCodes = await getAllSignupCodes();
-  const users = await UserDAO.getAll();
-  const roles = await RoleDAO.getAll();
+  const users = await getAllUsers();
+  const roles = await getAllRoles();
 
   const permissions = {
     canGenerate: await checkPermission("users.generate_signup_code"),

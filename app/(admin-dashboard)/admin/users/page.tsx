@@ -1,7 +1,7 @@
 import { enforceAuthentication } from "@/lib/services/auth/protection";
 import { checkPermission } from "@/lib/services/auth/permissions";
-import { UserDAO } from "@/lib/data/user";
-import { RoleDAO } from "@/lib/data/role";
+import { getAllUsers } from "@/lib/data/user";
+import { getAllRoles } from "@/lib/data/role";
 import { UsersTable } from "@/components/admin/users-table";
 import { redirect } from "next/navigation";
 
@@ -14,8 +14,8 @@ export default async function AdminUsersPage() {
   }
 
   // Fetch all users and roles using the respective DAOs
-  const users = await UserDAO.getAll();
-  const roles = await RoleDAO.getAll();
+  const users = await getAllUsers();
+  const roles = await getAllRoles();
 
   const permissions = {
     canCreate: await checkPermission("users.create"),

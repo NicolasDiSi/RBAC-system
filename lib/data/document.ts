@@ -1,9 +1,7 @@
 
 import { eq } from 'drizzle-orm';
 import { getDb } from '../db';
-import schema from '../db/schema';
-
-const { documentos } = schema;
+import { documentos }  from '../db/schema';
 
 export type Documento = typeof documentos.$inferSelect;
 export type NewDocumento = typeof documentos.$inferInsert;

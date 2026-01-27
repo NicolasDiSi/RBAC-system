@@ -1,10 +1,7 @@
 
 import { eq } from 'drizzle-orm';
 import { getDb } from '../db';
-import schema from '../db/schema';
-import { users } from '../db/schema';
-
-const { signupCodes } = schema;
+import { signupCodes } from '../db/schema';
 
 export type SignupCode = typeof signupCodes.$inferSelect;
 export type NewSignupCode = typeof signupCodes.$inferInsert;

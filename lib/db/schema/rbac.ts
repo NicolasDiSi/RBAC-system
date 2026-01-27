@@ -10,7 +10,8 @@ import {
   index,
   primaryKey,
 } from 'drizzle-orm/pg-core';
-import { relations } from 'drizzle-orm';
+import { relations, sql } from 'drizzle-orm';
+import { check } from 'drizzle-orm/gel-core';
 
 // RBAC System Tables
 
@@ -65,13 +66,13 @@ export const permissions = pgTable(
     action: varchar('action', { length: 50 }).notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   },
-  (table) => {
-    return {
-      nameIndex: uniqueIndex('permissions_name_key').on(table.name),
-      resourceIndex: index('idx_permissions_resource').on(table.resource),
-      actionIndex: index('idx_permissions_action').on(table.action),
-    };
-  },
+  (table) => ({
+    nameIndex: uniqueIndex('permissions_name_key').on(table.name),
+    resourceIndex: index('idx_permissions_resource').on(table.resource),
+    actionIndex: index('idx_permissions_action').on(table.action),
+    // Added SQL constraint parity
+    chkPermissionName: check('chk_permission_name', sql`${table.name} ~ '^[a-z_]+\.[a-z_]+$'`),
+  }),
 );
 
 export const rolePermissions = pgTable(

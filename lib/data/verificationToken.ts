@@ -1,9 +1,7 @@
 
 import { eq } from 'drizzle-orm';
 import { getDb } from '../db';
-import schema from '../db/schema';
-
-const { verificationTokens } = schema;
+import { verificationTokens } from '../db/schema';
 
 export type VerificationToken = typeof verificationTokens.$inferSelect;
 export type NewVerificationToken = typeof verificationTokens.$inferInsert;

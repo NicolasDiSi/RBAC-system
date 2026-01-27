@@ -51,3 +51,13 @@ export async function updateUserVerificationStatus(userId: string): Promise<User
         .returning();
     return updatedUser;
 }
+
+export async function getAllUsers() {
+    const db = await getDb();
+    const allUsers = await db.query.users.findMany({
+        with: {
+            role: true,
+        },
+    });
+    return allUsers;
+}

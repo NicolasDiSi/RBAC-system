@@ -1,9 +1,7 @@
 
 import { eq } from 'drizzle-orm';
 import { getDb } from '../db';
-import schema from '../db/schema';
-
-const { shareTokens } = schema;
+import { shareTokens } from '../db/schema';
 
 export type ShareToken = typeof shareTokens.$inferSelect;
 export type NewShareToken = typeof shareTokens.$inferInsert;

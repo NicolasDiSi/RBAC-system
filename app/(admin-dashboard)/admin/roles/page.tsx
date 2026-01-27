@@ -1,6 +1,6 @@
 import { enforceAuthentication } from "@/lib/services/auth/protection";
 import { checkPermission } from "@/lib/services/auth/permissions";
-import { RoleDAO } from "@/lib/data/role";
+import { getAllRolesWithPermissionCount, getAllPermissions  } from "@/lib/data/role";
 import { RolesTable } from "@/components/admin/roles-table";
 import { redirect } from "next/navigation";
 
@@ -13,8 +13,8 @@ export default async function AdminRolesPage() {
   }
 
   // Fetch all roles and permissions using the DAO
-  const roles = await RoleDAO.getAllWithPermissionCount();
-  const permissions = await RoleDAO.getAllPermissions();
+  const roles = await getAllRolesWithPermissionCount();
+  const permissions = await getAllPermissions();
 
   return (
       <div className="space-y-6">

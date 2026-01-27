@@ -2,11 +2,8 @@ import { cache } from 'react'
 import { getAuthenticatedUser } from "./user"
 import { getRolePermissions } from '@/lib/data/role';
 import { getDb } from '@/lib/db';
-import schema from '@/lib/db/schema';
+import { permissions as permissionsTable } from '@/lib/db/schema';
 import { inArray } from 'drizzle-orm';
-
-const { permissions: permissionsTable } = schema;
-
 
 export const getUserPermissions = cache(async (roleId: string | null) => {
   // If the user has no role, they have no permissions.

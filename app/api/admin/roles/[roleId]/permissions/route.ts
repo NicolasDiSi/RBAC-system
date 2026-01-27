@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { checkPermission } from '@/lib/services/auth/permissions';
-import { RoleDAO } from '@/lib/data/role';
+import { getRoleById } from '@/lib/data/role';
 
 export async function GET(request: Request, { params }: { params: { roleId: string } }) {
   try {
@@ -15,9 +15,9 @@ export async function GET(request: Request, { params }: { params: { roleId: stri
       return NextResponse.json({ message: 'Role ID is required' }, { status: 400 });
     }
 
-    const permissionIds = await RoleDAO.getPermissions(roleId);
+    const { rolePermissions } = await getRoleById(roleId); // Fix this type inference
 
-    return NextResponse.json({ permissionIds });
+    return NextResponse.json(rolePermissions.map((rp)=>rp.permissionId));
   } catch (error) {
     console.error('Error fetching role permissions:', error);
     return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });

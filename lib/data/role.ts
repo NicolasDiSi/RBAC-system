@@ -1,8 +1,6 @@
-import { sql, eq, inArray } from 'drizzle-orm';
+import { eq, count, ExtractTablesWithRelations } from 'drizzle-orm';
 import { getDb } from '../db';
-import schema from '../db/schema';
-
-const { roles, permissions, rolePermissions } = schema;
+import { roles, permissions, rolePermissions } from '../db/schema/index';
 
 export type Role = typeof roles.$inferSelect;
 export type Permission = typeof permissions.$inferSelect;
@@ -22,7 +20,7 @@ export async function getAllRolesWithPermissionCount(): Promise<any[]> {
         description: roles.description,
         createdAt: roles.createdAt,
         updatedAt: roles.updatedAt,
-        permissionCount: sql<number>`count(${rolePermissions.permissionId})`.mapWith(Number),
+        role_permissions: count(rolePermissions.permissionId).mapWith(Number),
       })
       .from(roles)
       .leftJoin(rolePermissions, eq(roles.id, rolePermissions.roleId))
@@ -36,10 +34,14 @@ export async function getAllPermissions(): Promise<Permission[]> {
   return db.select().from(permissions).orderBy(permissions.resource, permissions.action);
 }
 
-export async function getRoleById(roleId: string): Promise<Role | undefined> {
+type RoleWithPermissions = Role & { rolePermissions: any[] };
+export async function getRoleById(roleId: string): Promise<RoleWithPermissions | undefined>{
   const db = await getDb();
   return db.query.roles.findFirst({
     where: eq(roles.id, roleId),
+    with: {
+      rolePermissions:true
+    }
   });
 }
 

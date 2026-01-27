@@ -6,7 +6,14 @@
     "build": "next build",
     "dev": "docker compose up -d && next dev -H 0.0.0.0",
     "lint": "eslint .",
-    "start": "next start"
+    "start": "next start",
+    "db:push": "drizzle-kit push",
+    "db:generate": "drizzle-kit generate",
+    "db:studio": "drizzle-kit studio",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f",
+    "db:seed": "tsx scripts/seed.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -84,6 +91,7 @@
     "@types/react-dom": "^19",
     "postcss": "^8.5",
     "tailwindcss": "^4.1.9",
+    "tsx": "^4.21.0",
     "tw-animate-css": "1.3.3",
     "typescript": "^5"
   }

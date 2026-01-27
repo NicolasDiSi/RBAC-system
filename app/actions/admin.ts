@@ -6,8 +6,8 @@ import { checkPermission } from "@/lib/services/auth/permissions"
 import { createUserSchema, editUserSchema } from "@/lib/validations/user-schema"
 import { createRoleSchema, editRoleSchema } from "@/lib/validations/role-schema" // New import
 import { adminUpdatePasswordSchema } from "@/lib/validations/password-schemas"
-import { getUserById, UserDAO } from "@/lib/data/user"
-import { RoleDAO } from "@/lib/data/role"
+import * as UserDAO from "@/lib/data/user"
+import * as RoleDAO from "@/lib/data/role"
 import { getSupabaseServerClient } from "@/lib/services/supabase/server"
 
 import { createVerificationToken } from "./verificationToken"
@@ -87,7 +87,7 @@ export async function updateRolePermissions(roleId: string, permissionIds: strin
     throw new Error("Unauthorized")
   }
 
-  await RoleDAO.updatePermissions(roleId, permissionIds)
+  await RoleDAO.updateRolePermissions(roleId, permissionIds)
 
   revalidatePath("/admin/roles")
 }
@@ -98,7 +98,7 @@ export async function getRoles() {
     throw new Error("Unauthorized")
   }
 
-  return RoleDAO.getAll()
+  return RoleDAO.getAllRoles()
 }
 
 export async function createRole(data: any) {
@@ -193,7 +193,7 @@ export async function resendVerificationEmail(userId: string) {
     throw new Error("Unauthorized")
   }
 
-  const user = await getUserById(userId)
+  const user = await UserDAO.getUserById(userId)
   if (!user || !user.email) {
     throw new Error("User not found or email missing.")
   }

@@ -39,7 +39,7 @@ interface Role {
   id: string
   name: string
   description: string | null
-  role_permissions: { count: number }[]
+  role_permissions: number;
 }
 
 interface Permission {
@@ -147,7 +147,7 @@ export function RolesTable({ roles, permissions }: { roles: Role[]; permissions:
                   </div>
                 </button>
                 <div className="flex items-center gap-2">
-                  <Badge variant="secondary">{role.role_permissions[0]?.count || 0} permissions</Badge>
+                  <Badge variant="secondary">{role.role_permissions || 0} permissions</Badge>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" className="h-8 w-8 p-0">
@@ -239,7 +239,7 @@ function PermissionsEditor({
     const response = await fetch(`/api/admin/roles/${roleId}/permissions`); // Assuming this API exists
     if (response.ok) {
       const data = await response.json();
-      setSelectedPermissions(new Set(data.permissionIds));
+      setSelectedPermissions(new Set(data));
     } else {
       toast.error('Failed to fetch role permissions.');
     }
