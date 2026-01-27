@@ -55,7 +55,7 @@ export async function updateRole(roleId: string, roleData: Partial<NewRole>): Pr
   const db = await getDb();
   const [updatedRole] = await db
     .update(roles)
-    .set({ ...roleData, updatedAt: new Date() })
+    .set({ ...roleData })
     .where(eq(roles.id, roleId))
     .returning();
   return updatedRole;

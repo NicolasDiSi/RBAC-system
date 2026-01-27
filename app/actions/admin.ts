@@ -25,7 +25,7 @@ export async function createUser(data: FormData) {
     throw new Error("Invalid user data.")
   }
   
-  await UserDAO.create(validatedFields.data)
+  await UserDAO.createUser(validatedFields.data)
 
   revalidatePath("/admin/users")
 }
@@ -42,7 +42,7 @@ export async function updateUser(userId: string, data: FormData) {
     throw new Error("Invalid user data.")
   }
 
-  await UserDAO.update(userId, validatedFields.data)
+  await UserDAO.updateUser(userId, validatedFields.data)
 
   revalidatePath("/admin/users")
 }
@@ -53,7 +53,7 @@ export async function updateUserStatus(userId: string, isActive: boolean) {
     throw new Error("Unauthorized")
   }
 
-  await UserDAO.updateStatus(userId, isActive)
+  await UserDAO.updateUserStatus(userId, isActive)
 
   revalidatePath("/admin/users")
 }
@@ -64,7 +64,7 @@ export async function deleteUser(userId: string) {
     throw new Error("Unauthorized")
   }
 
-  await UserDAO.delete(userId)
+  await UserDAO.deleteUser(userId)
 
   revalidatePath("/admin/users")
 }
@@ -76,7 +76,7 @@ export async function updateUserRole(userId: string, roleId: string) {
   }
 
   const roleIdOrNull = roleId === "none" ? null : roleId
-  await UserDAO.updateRole(userId, roleIdOrNull)
+  await UserDAO.updateUserRole(userId, roleIdOrNull)
 
   revalidatePath("/admin/users")
 }
@@ -113,7 +113,7 @@ export async function createRole(data: any) {
     throw new Error("Invalid role data.")
   }
 
-  await RoleDAO.create(validatedFields.data)
+  await RoleDAO.createRole(validatedFields.data)
 
   revalidatePath("/admin/roles")
 }
@@ -130,7 +130,7 @@ export async function updateRole(roleId: string, data: FormData) {
     throw new Error("Invalid role data.")
   }
 
-  await RoleDAO.update(roleId, validatedFields.data)
+  await RoleDAO.updateRole(roleId, validatedFields.data)
 
   revalidatePath("/admin/roles")
 }
@@ -141,7 +141,7 @@ export async function deleteRole(roleId: string) {
     throw new Error("Unauthorized")
   }
 
-  await RoleDAO.delete(roleId)
+  await RoleDAO.deleteRole(roleId)
 
   revalidatePath("/admin/roles")
 }
@@ -160,7 +160,7 @@ export async function updateUserPassword(userId: string, data: FormData) {
 
   const { password: newPassword, sign_out_user: signOutUser } = validatedFields.data;
 
-  await UserDAO.updatePassword(userId, newPassword)
+  await UserDAO.updateUserPassword(userId, newPassword)
   
   if (signOutUser) {
     await deleteUserSessions(userId)

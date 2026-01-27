@@ -46,7 +46,51 @@ export async function getUserWithRoleById(userId: string) {
 export async function updateUserVerificationStatus(userId: string): Promise<User> {
     const db = await getDb();
     const [updatedUser] = await db.update(users)
-        .set({ verifiedAt: new Date(), updatedAt: new Date() })
+        .set({ verifiedAt: new Date() })
+        .where(eq(users.id, userId))
+        .returning();
+    return updatedUser;
+}
+
+export async function updateUser(userId: string, data: Partial<NewUser>): Promise<User> {
+    const db = await getDb();
+    const [updatedUser] = await db
+      .update(users)
+      .set({ ...data })
+      .where(eq(users.id, userId))
+      .returning();
+    return updatedUser;
+}
+
+export async function updateUserStatus(userId: string, isActive: boolean): Promise<User> {
+    const db = await getDb();
+    const [updatedUser] = await db.update(users)
+        .set({ isActive })
+        .where(eq(users.id, userId))
+        .returning();
+    return updatedUser;
+}
+
+export async function deleteUser(userId: string): Promise<User> {
+    const db = await getDb();
+    const [deletedUser] = await db.delete(users).where(eq(users.id, userId)).returning();
+    return deletedUser;
+}
+
+export async function updateUserRole(userId:string, roleId: string | null): Promise<User> {
+    const db = await getDb();
+    const [updatedUser] = await db.update(users)
+        .set({ roleId })
+        .where(eq(users.id, userId))
+        .returning();
+    return updatedUser;
+}
+
+export async function updateUserPassword(userId: string, newPasswordPlain: string): Promise<User> {
+    const db = await getDb();
+    const hashedPassword = await hash(newPasswordPlain, 12);
+    const [updatedUser] = await db.update(users)
+        .set({ hashedPassword })
         .where(eq(users.id, userId))
         .returning();
     return updatedUser;

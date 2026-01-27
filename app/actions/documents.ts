@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { getAuthenticatedUser } from "@/lib/services/auth/user"
 import { checkPermission } from "@/lib/services/auth/permissions"
-import { DocumentDAO } from "@/lib/data/document"
+import  * as DocumentDAO from "@/lib/data/document"
 
 export async function uploadDocument(formData: FormData) {
   const user = await getAuthenticatedUser()
@@ -48,7 +48,7 @@ export async function uploadDocument(formData: FormData) {
     uploaded_by: user?.id,
   }
 
-  const document = await DocumentDAO.create(documentData)
+  const document = await DocumentDAO.createDocument(documentData)
 
   revalidatePath("/documents")
   revalidatePath(`/employees/${empleado_id}`)
@@ -61,13 +61,13 @@ export async function deleteDocument(documentId: string) {
     throw new Error("Unauthorized")
   }
 
-  const document = await DocumentDAO.getById(documentId)
+  const document = await DocumentDAO.getDocumentById(documentId)
   if (!document) {
     throw new Error("Document not found")
   }
 
-  await DocumentDAO.delete(documentId)
+  await DocumentDAO.deleteDocument(documentId)
 
   revalidatePath("/documents")
-  revalidatePath(`/employees/${document.empleado_id}`)
+  revalidatePath(`/employees/${document.empleadoId}`)
 }
