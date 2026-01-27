@@ -33,8 +33,8 @@ export const UserForm: FC<UserFormProps> = ({ user, roles, onSubmit, onSuccess, 
       name: '',
       email: '',
       password: '',
-      role_id: null,
-      is_active: true,
+      roleId: null,
+      isActive: true,
     },
   })
 
@@ -45,15 +45,15 @@ export const UserForm: FC<UserFormProps> = ({ user, roles, onSubmit, onSuccess, 
             name: user.name,
             email: user.email,
             password: '',
-            role_id: user.role_id,
-            is_active: user.is_active,
+            roleId: user.roleId,
+            isActive: user.isActive,
           }
         : {
             name: '',
             email: '',
             password: '',
-            role_id: undefined,
-            is_active: true,
+            roleId: undefined,
+            isActive: true,
           }
     )
   }, [user, form])
@@ -117,7 +117,7 @@ export const UserForm: FC<UserFormProps> = ({ user, roles, onSubmit, onSuccess, 
         />
         <FormField
           control={form.control}
-          name="role_id"
+          name="roleId"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Role</FormLabel>
@@ -142,7 +142,7 @@ export const UserForm: FC<UserFormProps> = ({ user, roles, onSubmit, onSuccess, 
         />
         <FormField
           control={form.control}
-          name="is_active"
+          name="isActive"
           render={({ field }) => (
             <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
               <div className="space-y-0.5">

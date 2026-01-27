@@ -4,8 +4,8 @@ export const createProjectSchema = z.object({
   nombre: z.string().min(2, { message: "Project name must be at least 2 characters." }),
   codigo: z.string().max(50, { message: "Project code must be at most 50 characters." }).optional().or(z.literal('')),
   ubicacion: z.string().optional().or(z.literal('')),
-  fecha_inicio: z.string().min(1, "Start date is required").refine((val) => !isNaN(new Date(val).getTime()), "Invalid date format for Start Date"),
-  fecha_fin_estimada: z.string().transform(e => e === "" ? undefined : e).optional().refine((val) => {
+  fechaInicio: z.string().min(1, "Start date is required").refine((val) => !isNaN(new Date(val).getTime()), "Invalid date format for Start Date"),
+  fechaFinEstimada: z.string().transform(e => e === "" ? undefined : e).optional().refine((val) => {
     if (val === undefined) return true;
     return !isNaN(new Date(val as string).getTime());
   }, "Invalid date format for Estimated End Date"),
@@ -23,15 +23,15 @@ export const editProjectSchema = z.object({
   nombre: z.string().min(2, { message: "Project name must be at least 2 characters." }).optional(),
   codigo: z.string().max(50, { message: "Project code must be at most 50 characters." }).optional().or(z.literal('')),
   ubicacion: z.string().optional().or(z.literal('')),
-  fecha_inicio: z.string().transform(e => e === "" ? undefined : e).optional().refine((val) => {
+  fechaInicio: z.string().transform(e => e === "" ? undefined : e).optional().refine((val) => {
     if (val === undefined) return true;
     return !isNaN(new Date(val as string).getTime());
   }, "Invalid date format for Start Date"),
-  fecha_fin_estimada: z.string().transform(e => e === "" ? undefined : e).optional().refine((val) => {
+  fechaFinEstimada: z.string().transform(e => e === "" ? undefined : e).optional().refine((val) => {
     if (val === undefined) return true;
     return !isNaN(new Date(val as string).getTime());
   }, "Invalid date format for Estimated End Date"),
-  fecha_fin_real: z.string().transform(e => e === "" ? undefined : e).optional().refine((val) => {
+  fechaFinReal: z.string().transform(e => e === "" ? undefined : e).optional().refine((val) => {
     if (val === undefined) return true;
     return !isNaN(new Date(val as string).getTime());
   }, "Invalid date format for Real End Date"),

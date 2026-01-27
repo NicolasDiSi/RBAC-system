@@ -23,7 +23,7 @@ export async function getSignupCodeByUsedId(userId: string): Promise<SignupCode 
 export async function getAllSignupCodes(): Promise<SignupCode[]> {
   const db = await getDb();
   return db.query.signupCodes.findMany({
-    orderBy: (signupCodes, { desc }) => [desc(signupCodes.createdAt)],
+    orderBy: (signupCodes, { desc }) => [desc(signupCodes.expiresAt)],
     with: {
         role: true,
         usedByUser: {

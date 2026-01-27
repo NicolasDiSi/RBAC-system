@@ -25,7 +25,7 @@ export function DeactivateEmployeeForm({
   const form = useForm<DeactivateEmployeeFormValues>({
     resolver: zodResolver(deactivateEmployeeSchema),
     defaultValues: {
-      fecha_egreso: new Date().toISOString().split('T')[0],
+      fechaEgreso: new Date().toISOString().split('T')[0],
     },
   })
 
@@ -49,7 +49,7 @@ export function DeactivateEmployeeForm({
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <FormField
           control={form.control}
-          name="fecha_egreso"
+          name="fechaEgreso"
           render={({ field }) => (
             <FormItem>
               <FormLabel>End Date</FormLabel>

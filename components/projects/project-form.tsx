@@ -38,8 +38,8 @@ export const ProjectForm: FC<ProjectFormProps> = ({ project }) => {
       nombre: "",
       codigo: "",
       ubicacion: "",
-      fecha_inicio: "",
-      fecha_fin_estimada: "",
+      fechaInicio: "",
+      fechaFinEstimada: "",
       presupuesto: 0,
       descripcion: "",
       estado: "planificada",
@@ -124,7 +124,7 @@ export const ProjectForm: FC<ProjectFormProps> = ({ project }) => {
             <div className="grid gap-4 md:grid-cols-3">
               <FormField
                 control={form.control}
-                name="fecha_inicio"
+                name="fechaInicio"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Start Date</FormLabel>
@@ -137,7 +137,7 @@ export const ProjectForm: FC<ProjectFormProps> = ({ project }) => {
               />
               <FormField
                 control={form.control}
-                name="fecha_fin_estimada"
+                name="fechaFinEstimada"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Estimated End Date</FormLabel>

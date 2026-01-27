@@ -38,13 +38,13 @@ export const EmployeeForm: FC<EmployeeFormProps> = ({ employee }) => {
 			nombre: "",
 			apellido: "",
 			dni: "",
-			fecha_nacimiento: "",
+			fechaNacimiento: "",
 			telefono: "",
 			email: "",
 			direccion: "",
-			fecha_ingreso: "",
-			fecha_egreso: "",
-			tipo_contrato: "",
+			fechaIngreso: "",
+			fechaEgreso: "",
+			tipoContrato: "",
 			categoria: "",
 			observaciones: "",
 		},
@@ -186,7 +186,7 @@ export const EmployeeForm: FC<EmployeeFormProps> = ({ employee }) => {
 						<div className="grid gap-4 md:grid-cols-3">
 							<FormField
 								control={form.control}
-								name="fecha_ingreso"
+								name="fechaIngreso"
 								render={({ field }) => (
 									<FormItem>
 										<FormLabel>Start Date *</FormLabel>
@@ -199,7 +199,7 @@ export const EmployeeForm: FC<EmployeeFormProps> = ({ employee }) => {
 							/>
 							<FormField
 								control={form.control}
-								name="fecha_egreso"
+								name="fechaEgreso"
 								render={({ field }) => (
 									<FormItem>
 										<FormLabel>End Date</FormLabel>
@@ -212,7 +212,7 @@ export const EmployeeForm: FC<EmployeeFormProps> = ({ employee }) => {
 							/>
 							<FormField
 								control={form.control}
-								name="tipo_contrato"
+								name="tipoContrato"
 								render={({ field }) => (
 									<FormItem>
 										<FormLabel>Contract Type</FormLabel>

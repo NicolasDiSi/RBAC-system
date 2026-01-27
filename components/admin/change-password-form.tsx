@@ -23,7 +23,7 @@ interface ChangePasswordFormProps {
 export const ChangePasswordForm: FC<ChangePasswordFormProps> = ({ onSubmit, onSuccess, onError, onCancel }) => {
   const form = useForm<ChangePasswordFormValues>({
     resolver: zodResolver(changePasswordSchema),
-    defaultValues: { password: '', confirm_password: '', sign_out_user: false },
+    defaultValues: { password: '', confirmPassword: '', signOutUser: false },
   })
 
   const { isSubmitting } = form.formState
@@ -56,7 +56,7 @@ export const ChangePasswordForm: FC<ChangePasswordFormProps> = ({ onSubmit, onSu
         />
         <FormField
           control={form.control}
-          name="confirm_password"
+          name="confirmPassword"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Confirm New Password</FormLabel>
@@ -69,7 +69,7 @@ export const ChangePasswordForm: FC<ChangePasswordFormProps> = ({ onSubmit, onSu
         />
         <FormField
           control={form.control}
-          name="sign_out_user"
+          name="signOutUser"
           render={({ field }) => (
             <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
               <FormControl>

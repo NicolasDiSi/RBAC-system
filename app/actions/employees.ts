@@ -43,15 +43,15 @@ export async function createEmployee(data: any) {
         nombre: validatedData.nombre,
         apellido: validatedData.apellido,
         dni: validatedData.dni,
-        /* cuil: validatedData.cuil, */
-        fechaNacimiento: validatedData.fecha_nacimiento,
+        cuil: validatedData.cuil,
+        fechaNacimiento: validatedData.fechaNacimiento,
         telefono: validatedData.telefono,
         email: validatedData.email,
         direccion: validatedData.direccion,
-        fechaIngreso: validatedData.fecha_ingreso,
-        tipoContrato: validatedData.tipo_contrato,
+        fechaIngreso: validatedData.fechaIngreso,
+        tipoContrato: validatedData.tipoContrato,
         categoria: validatedData.categoria,
-        /* empresaTercera: validatedData.empresa_tercera, */
+        empresaTercera: validatedData.empresaTercera,
         observaciones: validatedData.observaciones,
         estado: "activo",
         createdBy: user?.id,
@@ -60,7 +60,7 @@ export async function createEmployee(data: any) {
     // Create history entry for employee creation
     await db.insert(historialRelacionLaboral).values({
       empleadoId: employee.id,
-      fechaEvento: validatedData.fecha_ingreso,
+      fechaEvento: validatedData.fechaIngreso,
       tipoEvento: "ingreso",
       descripcion: `Employee joined the company as ${validatedData.categoria || "employee"}`,
       categoriaNueva: validatedData.categoria,
@@ -104,15 +104,15 @@ export async function updateEmployee(id: string, data: any) {
         nombre: validatedData.nombre,
         apellido: validatedData.apellido,
         dni: validatedData.dni,
-        /* cuil: validatedData.cuil, */
-        fechaNacimiento: validatedData.fecha_nacimiento,
+        cuil: validatedData.cuil,
+        fechaNacimiento: validatedData.fechaNacimiento,
         telefono: validatedData.telefono,
         email: validatedData.email,
         direccion: validatedData.direccion,
-        fechaIngreso: validatedData.fecha_ingreso,
-        tipoContrato: validatedData.tipo_contrato,
+        fechaIngreso: validatedData.fechaIngreso,
+        tipoContrato: validatedData.tipoContrato,
         categoria: validatedData.categoria,
-        /* empresaTercera: validatedData.empresa_tercera, */
+        empresaTercera: validatedData.empresaTercera,
         observaciones: validatedData.observaciones,
     }).where(eq(empleados.id, id));
 
@@ -155,13 +155,13 @@ export async function deactivateEmployee(employeeId: string, data: any) {
     
     await db.update(empleados).set({
         estado: "inactivo",
-        fechaEgreso: validatedData.fecha_egreso, // Already correct, but ensuring consistency
+        fechaEgreso: validatedData.fechaEgreso,
       }).where(eq(empleados.id, employeeId));
 
     // Create history entry for employee deactivation
     await db.insert(historialRelacionLaboral).values({
       empleadoId: employeeId,
-      fechaEvento: validatedData.fecha_egreso,
+      fechaEvento: validatedData.fechaEgreso,
       tipoEvento: "egreso",
       descripcion: `Employee deactivated by ${user?.email}`,
       createdBy: user?.id,

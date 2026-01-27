@@ -41,8 +41,8 @@ export async function createProject(data: any) {
       nombre: validatedData.nombre,
       codigo: validatedData.codigo,
       ubicacion: validatedData.ubicacion,
-      fechaInicio: validatedData.fecha_inicio,
-      fechaFinEstimada: validatedData.fecha_fin_estimada,
+      fechaInicio: validatedData.fechaInicio,
+      fechaFinEstimada: validatedData.fechaFinEstimada,
       presupuesto: validatedData.presupuesto?.toString(),
       descripcion: validatedData.descripcion,
       createdBy: user?.id,
@@ -81,15 +81,15 @@ export async function createAssignment(data: any) {
 
   // Get employee details for history
   const employee = await db.query.empleados.findFirst({
-    where: eq(empleados.id, validatedData.empleado_id)
+    where: eq(empleados.id, validatedData.empleadoId)
   });
 
   const [assignment] = await db.insert(asignacionesContratos).values({
-      empleadoId: validatedData.empleado_id,
-      obraId: validatedData.obra_id,
-      fechaInicio: validatedData.fecha_inicio,
-      fechaFin: validatedData.fecha_fin,
-      tipoContrato: validatedData.tipo_contrato,
+      empleadoId: validatedData.empleadoId,
+      obraId: validatedData.obraId,
+      fechaInicio: validatedData.fechaInicio,
+      fechaFin: validatedData.fechaFin,
+      tipoContrato: validatedData.tipoContrato,
       categoria: validatedData.categoria,
       salario: validatedData.salario?.toString(),
       observaciones: validatedData.observaciones,
@@ -99,21 +99,21 @@ export async function createAssignment(data: any) {
 
   // Create history entry for assignment
   await db.insert(historialRelacionLaboral).values({
-    empleadoId: validatedData.empleado_id,
-    fechaEvento: validatedData.fecha_inicio,
+    empleadoId: validatedData.empleadoId,
+    fechaEvento: validatedData.fechaInicio,
     tipoEvento: "cambio_obra",
     descripcion: `Assigned to project with category ${validatedData.categoria || "N/A"}`,
-    obraId: validatedData.obra_id,
+    obraId: validatedData.obraId,
     categoriaNueva: validatedData.categoria,
     createdBy: user?.id,
   });
 
-  revalidatePath(`/projects/${validatedData.obra_id}`)
-  revalidatePath(`/employees/${validatedData.empleado_id}`)
+  revalidatePath(`/projects/${validatedData.obraId}`)
+  revalidatePath(`/employees/${validatedData.empleadoId}`)
   return assignment
 }
 
-export async function endAssignment(data: { assignment_id: string, fecha_fin: string }) {
+export async function endAssignment(data: { assignmentId: string, fechaFin: string }) {
   const user = await getAuthenticatedUser();
   const hasPermission = await checkPermission("assignments.update");
   if (!hasPermission) {
@@ -124,7 +124,7 @@ export async function endAssignment(data: { assignment_id: string, fecha_fin: st
   const validatedData = endAssignmentSchema.parse(data);
 
   const existingAssignment = await db.query.asignacionesContratos.findFirst({
-    where: eq(asignacionesContratos.id, validatedData.assignment_id)
+    where: eq(asignacionesContratos.id, validatedData.assignmentId)
   });
 
   if (!existingAssignment) {
@@ -135,12 +135,12 @@ export async function endAssignment(data: { assignment_id: string, fecha_fin: st
   }
 
   await db.update(asignacionesContratos)
-    .set({ fechaFin: validatedData.fecha_fin, estado: "finalizado" })
-    .where(eq(asignacionesContratos.id, validatedData.assignment_id));
+    .set({ fechaFin: validatedData.fechaFin, estado: "finalizado" })
+    .where(eq(asignacionesContratos.id, validatedData.assignmentId));
 
   await db.insert(historialRelacionLaboral).values({
     empleadoId: existingAssignment.empleadoId,
-    fechaEvento: validatedData.fecha_fin,
+    fechaEvento: validatedData.fechaFin,
     tipoEvento: "egreso",
     descripcion: `Assignment ended for project`,
     obraId: existingAssignment.obraId,
@@ -152,7 +152,7 @@ export async function endAssignment(data: { assignment_id: string, fecha_fin: st
 
   return {
     ...existingAssignment,
-    fecha_fin: validatedData.fecha_fin,
+    fechaFin: validatedData.fechaFin,
     estado: "finalizado",
   };
 }
@@ -178,11 +178,11 @@ export async function updateAssignment(assignmentId: string, data: any) {
 
   const [updatedAssignment] = await db.update(asignacionesContratos)
     .set({
-      empleadoId: validatedData.empleado_id,
-      obraId: validatedData.obra_id,
-      fechaInicio: validatedData.fecha_inicio,
-      fechaFin: validatedData.fecha_fin,
-      tipoContrato: validatedData.tipo_contrato,
+      empleadoId: validatedData.empleadoId,
+      obraId: validatedData.obraId,
+      fechaInicio: validatedData.fechaInicio,
+      fechaFin: validatedData.fechaFin,
+      tipoContrato: validatedData.tipoContrato,
       categoria: validatedData.categoria,
       salario: validatedData.salario?.toString(),
       observaciones: validatedData.observaciones,
@@ -210,8 +210,8 @@ export async function updateProject(projectId: string, data: any) {
       nombre: validatedData.nombre,
       codigo: validatedData.codigo,
       ubicacion: validatedData.ubicacion,
-      fechaInicio: validatedData.fecha_inicio,
-      fechaFinEstimada: validatedData.fecha_fin_estimada,
+      fechaInicio: validatedData.fechaInicio,
+      fechaFinEstimada: validatedData.fechaFinEstimada,
       presupuesto: validatedData.presupuesto?.toString(),
       descripcion: validatedData.descripcion,
     })

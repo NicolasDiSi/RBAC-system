@@ -12,9 +12,9 @@ export async function uploadDocument(formData: FormData) {
     throw new Error("Unauthorized")
   }
 
-  const empleado_id = formData.get("empleado_id") as string
-  const tipo_documento = formData.get("tipo_documento") as string
-  const fecha_vencimiento = formData.get("fecha_vencimiento") as string
+  const empleadoId = formData.get("empleadoId") as string
+  const tipoDocumento = formData.get("tipoDocumento") as string
+  const fechaVencimiento = formData.get("fechaVencimiento") as string
   const observaciones = formData.get("observaciones") as string
   const file = formData.get("file") as File
 
@@ -26,9 +26,9 @@ export async function uploadDocument(formData: FormData) {
   const fileUrl = `/uploads/${fileName}` // Placeholder URL
 
   let estado = "vigente"
-  if (fecha_vencimiento) {
+  if (fechaVencimiento) {
     const daysUntilExpiry = Math.floor(
-      (new Date(fecha_vencimiento).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24),
+      (new Date(fechaVencimiento).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24),
     )
     if (daysUntilExpiry < 0) {
       estado = "vencido"
@@ -38,20 +38,20 @@ export async function uploadDocument(formData: FormData) {
   }
 
   const documentData = {
-    empleado_id,
-    tipo_documento,
-    nombre_archivo: file.name,
-    url_archivo: fileUrl,
-    fecha_vencimiento: fecha_vencimiento || null,
+    empleadoId,
+    tipoDocumento,
+    nombreArchivo: file.name,
+    urlArchivo: fileUrl,
+    fechaVencimiento: fechaVencimiento || null,
     estado,
     observaciones: observaciones || null,
-    uploaded_by: user?.id,
+    uploadedBy: user?.id,
   }
 
   const document = await DocumentDAO.createDocument(documentData)
 
   revalidatePath("/documents")
-  revalidatePath(`/employees/${empleado_id}`)
+  revalidatePath(`/employees/${empleadoId}`)
   return document
 }
 

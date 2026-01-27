@@ -30,8 +30,8 @@ export function EndAssignmentForm({
     setLoading(true);
     try {
       await endAssignment({
-        assignment_id: assignment.id,
-        fecha_fin: endDate,
+        assignmentId: assignment.id,
+        fechaFin: endDate,
       });
       onSuccess();
     } catch (error) {
@@ -56,7 +56,7 @@ export function EndAssignmentForm({
       <div className="space-y-2">
         <Label>Start Date</Label>
         <p className="text-sm text-muted-foreground">
-          {new Date(assignment.fecha_inicio).toLocaleDateString()}
+          {new Date(assignment.fechaInicio).toLocaleDateString()}
         </p>
       </div>
       <div className="space-y-2">

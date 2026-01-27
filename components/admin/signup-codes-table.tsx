@@ -139,8 +139,8 @@ export function SignupCodesTable({ signupCodes = [], users = [], roles = [], per
                 </Badge>
               </TableCell>
               <TableCell>{getUsedByUserName(code.used_by_user_id)}</TableCell>
-              <TableCell>{format(new Date(code.expires_at), 'PPP p')}</TableCell>
-              <TableCell>{format(new Date(code.created_at), 'PPP p')}</TableCell>
+              <TableCell>{code.expiresAt === null ? 'N/A' : format(new Date(code.expiresAt), 'PPP p')}</TableCell>
+              <TableCell>{code.expiresAt === null ? 'N/A' : format(new Date(code.createdAt), 'PPP p')}</TableCell>
               <TableCell>
                 {permissions.canDelete && !code.is_used && (
                   <DropdownMenu>
