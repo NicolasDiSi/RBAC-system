@@ -4,35 +4,57 @@ import * as schema from './schema';
 import { checkDbHealth } from './health';
 import { getDatabaseConfig } from './config';
 
-const HEALTH_CHECK_INTERVAL = 30000; // 30 seconds
+const HEALTH_CHECK_INTERVAL = 60000; // 30 seconds
 const CONNECTION_TIMEOUT = 10000; // 10 seconds
+const RECONNECT_COOLDOWN = 5000; // 5 seconds
 
 interface DatabaseConnection {
   pool: Pool;
   db: NodePgDatabase<typeof schema>;
   type: 'primary' | 'fallback';
-  lastHealthCheck: number;
   isHealthy: boolean;
 }
 
 class DatabaseManager {
   private connection: DatabaseConnection | null = null;
   private initializationPromise: Promise<void> | null = null;
+  private healthCheckInterval: NodeJS.Timeout | null = null;
+  private lastConnectionAttempt = 0;
+  private lastError: Error | null = null;
   private config = getDatabaseConfig();
 
   async getDb(): Promise<NodePgDatabase<typeof schema>> {
     // Ensure only one initialization happens at a time
     if (this.initializationPromise) {
-      await this.initializationPromise;
+      try {
+        await this.initializationPromise;
+      } catch (e) {
+        // Ignore error here, handled by cooldown check below
+      }
     }
 
     if (!this.connection || !this.connection.isHealthy) {
-      this.initializationPromise = this.initializeConnection();
+      const now = Date.now();
+      
+      if (now - this.lastConnectionAttempt < RECONNECT_COOLDOWN) {
+        throw new Error(`Database unavailable. Retrying in ${Math.ceil((RECONNECT_COOLDOWN - (now - this.lastConnectionAttempt)) / 1000)}s. Last error: ${this.lastError?.message}`);
+      }
+
+      if (!this.initializationPromise) {
+        this.lastConnectionAttempt = now;
+        this.initializationPromise = this.initializeConnection()
+          .then(() => {
+            this.initializationPromise = null;
+            this.lastError = null;
+          })
+          .catch((err) => {
+            this.initializationPromise = null;
+            this.lastError = err;
+            this.lastConnectionAttempt = Date.now(); // Start cooldown from failure time
+            throw err;
+          });
+      }
       await this.initializationPromise;
-      this.initializationPromise = null;
-    } else {
-      // Periodic health check
-      await this.performPeriodicHealthCheck();
     }
 
     if (!this.connection) {
@@ -43,6 +65,9 @@ class DatabaseManager {
   }
 
   private async initializeConnection(): Promise<void> {
+    // Stop existing health check loop during initialization
+    this.stopHealthCheckLoop();
+
     const { primaryUrl, fallbackUrl } = this.config;
 
     console.log(`🔍 DB Driver: ${this.config.driver}`);
@@ -56,6 +81,7 @@ class DatabaseManager {
       if (primaryHealth.isHealthy) {
         console.log(`✅ Primary DB healthy (latency: ${primaryHealth.latency}ms)`);
         await this.createConnection(primaryUrl, 'primary');
+        this.startHealthCheckLoop();
         return;
       } else {
         console.warn(`⚠️  Primary DB unhealthy: ${primaryHealth.error}`);
@@ -70,6 +96,7 @@ class DatabaseManager {
       if (fallbackHealth.isHealthy) {
         console.log(`✅ Using fallback DB (latency: ${fallbackHealth.latency}ms)`);
         await this.createConnection(fallbackUrl, 'fallback');
+        this.startHealthCheckLoop();
         return;
       } else {
         console.error(`❌ Fallback DB also unhealthy: ${fallbackHealth.error}`);
@@ -96,6 +123,14 @@ class DatabaseManager {
       ssl: connectionString.includes('supabase') ? { rejectUnauthorized: false } : false,
     });
 
+    // Passive health check: Listen for errors on idle clients
+    pool.on('error', (err) => {
+      console.error('❌ Unexpected error on idle client', err);
+      if (this.connection && this.connection.pool === pool) {
+        this.connection.isHealthy = false;
+      }
+    });
+
     // Test the connection
     try {
       const client = await pool.connect();
@@ -113,22 +148,29 @@ class DatabaseManager {
       pool,
       db,
       type,
-      lastHealthCheck: Date.now(),
       isHealthy: true,
     };
 
     console.log(`✅ Database connection established (${type})`);
   }
 
-  private async performPeriodicHealthCheck(): Promise<void> {
-    if (!this.connection) return;
+  private startHealthCheckLoop() {
+    if (this.healthCheckInterval) return;
 
-    const now = Date.now();
-    const timeSinceLastCheck = now - this.connection.lastHealthCheck;
+    this.healthCheckInterval = setInterval(async () => {
+      await this.performBackgroundHealthCheck();
+    }, HEALTH_CHECK_INTERVAL);
+  }
 
-    if (timeSinceLastCheck < HEALTH_CHECK_INTERVAL) {
-      return; // Not time for a check yet
+  private stopHealthCheckLoop() {
+    if (this.healthCheckInterval) {
+      clearInterval(this.healthCheckInterval);
+      this.healthCheckInterval = null;
     }
+  }
+
+  private async performBackgroundHealthCheck(): Promise<void> {
+    if (!this.connection) return;
 
     try {
       // Quick health check using existing pool
@@ -136,9 +178,6 @@ class DatabaseManager {
       await client.query('SELECT 1');
       client.release();
       
-      this.connection.lastHealthCheck = now;
-      this.connection.isHealthy = true;
-
       // If we're on fallback and primary might be back, check primary
       if (this.connection.type === 'fallback') {
         await this.checkPrimaryRecovery();
@@ -147,8 +186,8 @@ class DatabaseManager {
       console.error('❌ Database health check failed:', error instanceof Error ? error.message : error);
       this.connection.isHealthy = false;
       
-      // Trigger reconnection
-      await this.initializeConnection();
+      // We don't automatically trigger initializeConnection here to avoid race conditions with getDb
+      // The next getDb call will see isHealthy=false and trigger initialization.
     }
   }
 
@@ -160,7 +199,18 @@ class DatabaseManager {
     
     if (healthResult.isHealthy) {
       console.log('🔄 Primary database recovered, switching back...');
-      await this.createConnection(primaryUrl, 'primary');
+      
+      try {
+        if (!this.initializationPromise) {
+          this.initializationPromise = this.initializeConnection()
+            .finally(() => {
+              this.initializationPromise = null;
+            });
+          await this.initializationPromise;
+        }
+      } catch (e) {
+        console.error("Failed to switch back to primary", e);
+      }
     }
   }
 
@@ -174,6 +224,7 @@ class DatabaseManager {
   // Graceful shutdown
   async shutdown(): Promise<void> {
     console.log('🛑 Shutting down database connections...');
+    this.stopHealthCheckLoop();
     await this.closeConnection();
   }
 }
