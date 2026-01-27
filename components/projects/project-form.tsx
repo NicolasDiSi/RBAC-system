@@ -19,12 +19,14 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type { Obra } from "@/lib/data/types/database";
+import { type InferSelectModel } from "drizzle-orm";
+import { obras } from "@/lib/db/schema";
 
+type Project = InferSelectModel<typeof obras>;
 type ProjectFormValues = CreateProjectFormValues | EditProjectFormValues;
 
 interface ProjectFormProps {
-  project?: Obra | null;
+  project?: Project | null;
 }
 
 export const ProjectForm: FC<ProjectFormProps> = ({ project }) => {
@@ -48,7 +50,15 @@ export const ProjectForm: FC<ProjectFormProps> = ({ project }) => {
 
   useEffect(() => {
     if (project) {
-      form.reset(project);
+      form.reset({
+        ...project,
+        // Drizzle returns decimals as strings, but the form expects numbers for zod validation
+        presupuesto: project.presupuesto ? Number(project.presupuesto) : 0,
+        // Drizzle returns dates as Date objects, but form inputs expect 'yyyy-MM-dd' strings
+        fechaInicio: project.fechaInicio ? new Date(project.fechaInicio).toISOString().split('T')[0] : "",
+        fechaFinEstimada: project.fechaFinEstimada ? new Date(project.fechaFinEstimada).toISOString().split('T')[0] : "",
+        fechaFinReal: project.fechaFinReal ? new Date(project.fechaFinReal).toISOString().split('T')[0] : "",
+      });
     }
   }, [project, form]);
 

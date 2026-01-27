@@ -35,24 +35,15 @@ import { SignupCodeForm } from './signup-code-form'
 import { deleteSignupCode } from '@/app/actions/signupCode'
 import { Badge } from '@/components/ui/badge'
 import { format } from 'date-fns'
-import type { Role } from '@/lib/data/types/database'
+import { type InferSelectModel } from 'drizzle-orm'
+import { roles as rolesSchema, users as usersSchema, signupCodes as signupCodesSchema } from '@/lib/db/schema'
 
-interface SignupCode {
-  id: string
-  code: string
-  role_id: string | null
-  used_by_user_id: string | null
-  expires_at: string
-  is_used: boolean
-  used_at: string | null
-  created_at: string
-}
-
-interface User {
-  id: string
-  name: string
-  email: string
-}
+type Role = InferSelectModel<typeof rolesSchema>;
+type User = InferSelectModel<typeof usersSchema>;
+type SignupCode = InferSelectModel<typeof signupCodesSchema> & {
+  role: Role | null;
+  usedByUser: { name: string | null; email: string } | null;
+};
 
 interface Permissions {
   canGenerate: boolean
@@ -96,14 +87,8 @@ export function SignupCodesTable({ signupCodes = [], users = [], roles = [], per
 
   const getAssignedRoleName = (roleId: string | null) => {
     if (!roleId) return 'N/A'
-    const role = roles.find(r => r.id === roleId)
+    const role = roles.find((r) => r.id === roleId)
     return role ? role.name : 'Unknown Role'
-  }
-
-  const getUsedByUserName = (userId: string | null) => {
-    if (!userId) return 'N/A'
-    const user = users.find(u => u.id === userId)
-    return user ? `${user.name} (${user.email})` : 'Unknown User'
   }
 
   return (
@@ -132,17 +117,17 @@ export function SignupCodesTable({ signupCodes = [], users = [], roles = [], per
           {signupCodes.map((code) => (
             <TableRow key={code.id}>
               <TableCell className="font-mono">{code.code}</TableCell>
-              <TableCell>{getAssignedRoleName(code.role_id)}</TableCell>
+              <TableCell>{code.role?.name ?? 'N/A'}</TableCell>
               <TableCell>
-                <Badge variant={code.is_used ? 'secondary' : (new Date(code.expires_at) < new Date() ? 'destructive' : 'default')}>
-                  {code.is_used ? `Used` : (new Date(code.expires_at) < new Date() ? 'Expired' : 'Active')}
+                <Badge variant={code.isUsed ? 'secondary' : (new Date(code.expiresAt) < new Date() ? 'destructive' : 'default')}>
+                  {code.isUsed ? `Used` : (new Date(code.expiresAt) < new Date() ? 'Expired' : 'Active')}
                 </Badge>
               </TableCell>
-              <TableCell>{getUsedByUserName(code.used_by_user_id)}</TableCell>
+              <TableCell>{code.usedByUser ? `${code.usedByUser.name} (${code.usedByUser.email})` : 'N/A'}</TableCell>
               <TableCell>{code.expiresAt === null ? 'N/A' : format(new Date(code.expiresAt), 'PPP p')}</TableCell>
               <TableCell>{code.expiresAt === null ? 'N/A' : format(new Date(code.createdAt), 'PPP p')}</TableCell>
               <TableCell>
-                {permissions.canDelete && !code.is_used && (
+                {permissions.canDelete && !code.isUsed && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" className="h-8 w-8 p-0">

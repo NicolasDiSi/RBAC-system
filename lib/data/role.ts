@@ -20,7 +20,7 @@ export async function getAllRolesWithPermissionCount(): Promise<any[]> {
         description: roles.description,
         createdAt: roles.createdAt,
         updatedAt: roles.updatedAt,
-        role_permissions: count(rolePermissions.permissionId).mapWith(Number),
+        permissionCount: count(rolePermissions.permissionId).mapWith(Number),
       })
       .from(roles)
       .leftJoin(rolePermissions, eq(roles.id, rolePermissions.roleId))

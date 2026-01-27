@@ -5,11 +5,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { endAssignment } from "@/app/actions/projects";
-import type { AsignacionContrato, Empleado, Obra } from "@/lib/data/types/database";
+import { type InferSelectModel } from "drizzle-orm";
+import { obras, asignacionesContratos, empleados } from "@/lib/db/schema";
+
+type Project = InferSelectModel<typeof obras>;
+type Employee = InferSelectModel<typeof empleados>;
+type Assignment = InferSelectModel<typeof asignacionesContratos>;
 
 interface EndAssignmentFormProps {
-  assignment: AsignacionContrato & { empleado: Empleado };
-  project: Obra;
+  assignment: Assignment & { empleado: Employee };
+  project: Project;
   onSuccess: () => void;
   onError: (error: Error) => void;
   onCancel: () => void;

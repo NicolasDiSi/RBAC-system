@@ -137,8 +137,8 @@ export function UsersTable({ users, roles, permissions }) {
               <TableCell>{user.role?.name || 'No Role'}</TableCell>
               <TableCell>
                 <div className="flex items-center space-x-2">
-                  <Badge variant={user.is_active ? 'default' : 'outline'}>
-                    {user.is_active ? 'Active' : 'Inactive'}
+                  <Badge variant={user.isActive ? 'default' : 'outline'}>
+                    {user.isActive ? 'Active' : 'Inactive'}
                   </Badge>
                 </div>
               </TableCell>

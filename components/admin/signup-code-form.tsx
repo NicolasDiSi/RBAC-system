@@ -11,13 +11,15 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { createSignupCode } from '@/app/actions/signupCode'
-import type { Role } from '@/lib/data/types/database'
+import { type InferSelectModel } from 'drizzle-orm'
+import { roles as rolesSchema } from '@/lib/db/schema'
 
 const formSchema = z.object({
   roleId: z.string().min(1, { message: 'Please select a role.' }),
   expirationDuration: z.coerce.number().min(1, { message: 'Duration must be at least 1 minute.' }),
 })
 
+type Role = InferSelectModel<typeof rolesSchema>;
 interface SignupCodeFormProps {
   roles: Role[]
   onSuccess?: () => void

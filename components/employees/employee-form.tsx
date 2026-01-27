@@ -19,12 +19,14 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type { Empleado } from "@/lib/data/types/database";
+import { type InferSelectModel } from "drizzle-orm";
+import { empleados } from "@/lib/db/schema";
 
+type Employee = InferSelectModel<typeof empleados>;
 type EmployeeFormValues = CreateEmployeeFormValues | EditEmployeeFormValues;
 
 interface EmployeeFormProps {
-	employee?: Empleado | null;
+	employee?: Employee | null;
 }
 
 export const EmployeeForm: FC<EmployeeFormProps> = ({ employee }) => {
@@ -52,7 +54,14 @@ export const EmployeeForm: FC<EmployeeFormProps> = ({ employee }) => {
 
 	useEffect(() => {
 		if (employee) {
-			form.reset(employee);
+			form.reset({
+        ...employee,
+        // Drizzle returns dates as Date objects, but form inputs expect 'yyyy-MM-dd' strings
+        fechaNacimiento: employee.fechaNacimiento ? new Date(employee.fechaNacimiento).toISOString().split('T')[0] : "",
+        fechaIngreso: employee.fechaIngreso ? new Date(employee.fechaIngreso).toISOString().split('T')[0] : "",
+        fechaEgreso: employee.fechaEgreso ? new Date(employee.fechaEgreso).toISOString().split('T')[0] : "",
+
+      });
 		}
 	}, [employee, form]);
 

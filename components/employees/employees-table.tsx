@@ -8,9 +8,11 @@ import Link from "next/link"
 import { useState } from "react"
 import { Eye, Edit, MoreHorizontal } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import type { Empleado } from "@/lib/data/types/database"
+import { type InferSelectModel } from 'drizzle-orm'
+import { empleados } from '@/lib/db/schema'
 
-export function EmployeesTable({ employees }: { employees: Empleado[] }) {
+type Employee = InferSelectModel<typeof empleados>;
+export function EmployeesTable({ employees }: { employees: Employee[] }) {
   const [search, setSearch] = useState("")
 
   const filteredEmployees = employees.filter(
@@ -67,7 +69,7 @@ export function EmployeesTable({ employees }: { employees: Empleado[] }) {
                 </TableCell>
                 <TableCell className="text-muted-foreground">{employee.dni}</TableCell>
                 <TableCell>
-                  <span className="capitalize">{employee.tipo_contrato?.replace("_", " ") || "-"}</span>
+                  <span className="capitalize">{employee.tipoContrato?.replace("_", " ") || "-"}</span>
                 </TableCell>
                 <TableCell>
                   <span className="capitalize">{employee.categoria?.replace("_", " ") || "-"}</span>
@@ -76,10 +78,10 @@ export function EmployeesTable({ employees }: { employees: Empleado[] }) {
                   <Badge variant={getStatusColor(employee.estado)}>{employee.estado}</Badge>
                 </TableCell>
                 <TableCell className="text-muted-foreground">
-                  {new Date(employee.fecha_ingreso).toLocaleDateString()}
+                  {new Date(employee.fechaIngreso).toLocaleDateString()}
                 </TableCell>
                 <TableCell className="text-muted-foreground">
-                  {employee.fecha_egreso ? new Date(employee.fecha_egreso).toLocaleDateString() : "-"}
+                  {employee.fechaEgreso ? new Date(employee.fechaEgreso).toLocaleDateString() : "-"}
                 </TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu>

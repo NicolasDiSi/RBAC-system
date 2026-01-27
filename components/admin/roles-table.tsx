@@ -35,20 +35,11 @@ import {
 import { RoleForm } from "./role-form" // Added RoleForm import
 import { toast } from "sonner" // Added toast import
 
-interface Role {
-  id: string
-  name: string
-  description: string | null
-  role_permissions: number;
-}
+import { type InferSelectModel } from 'drizzle-orm'
+import { roles as rolesSchema, permissions as permissionsSchema } from '@/lib/db/schema'
 
-interface Permission {
-  id: string
-  name: string
-  description: string | null
-  resource: string
-  action: string
-}
+type Role = InferSelectModel<typeof rolesSchema> & { permissionCount: number };
+type Permission = InferSelectModel<typeof permissionsSchema>;
 
 export function RolesTable({ roles, permissions }: { roles: Role[]; permissions: Permission[] }) {
   const router = useRouter()
@@ -147,7 +138,7 @@ export function RolesTable({ roles, permissions }: { roles: Role[]; permissions:
                   </div>
                 </button>
                 <div className="flex items-center gap-2">
-                  <Badge variant="secondary">{role.role_permissions || 0} permissions</Badge>
+                  <Badge variant="secondary">{role.permissionCount || 0} permissions</Badge>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" className="h-8 w-8 p-0">

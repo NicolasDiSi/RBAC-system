@@ -158,7 +158,7 @@ export async function updateUserPassword(userId: string, data: FormData) {
     throw new Error(validatedFields.error.errors.map(e => e.message).join(', '));
   }
 
-  const { password: newPassword, sign_out_user: signOutUser } = validatedFields.data;
+  const { password: newPassword, signOutUser } = validatedFields.data;
 
   await UserDAO.updateUserPassword(userId, newPassword)
   

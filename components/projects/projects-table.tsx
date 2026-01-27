@@ -7,9 +7,11 @@ import { Input } from "@/components/ui/input"
 import Link from "next/link"
 import { useState } from "react"
 import { Eye } from "lucide-react"
-import type { Obra } from "@/lib/data/types/database"
+import { type InferSelectModel } from 'drizzle-orm'
+import { obras } from '@/lib/db/schema'
 
-interface ProjectWithCount extends Obra {
+type Project = InferSelectModel<typeof obras>;
+interface ProjectWithCount extends Project {
   asignaciones_contratos: { count: number }[]
 }
 
@@ -74,7 +76,7 @@ export function ProjectsTable({ projects }: { projects: ProjectWithCount[] }) {
                   </Badge>
                 </TableCell>
                 <TableCell className="text-muted-foreground">
-                  {project.fecha_inicio || "-"}
+                  {project.fechaInicio || "-"}
                 </TableCell>
                 <TableCell>
                   <Badge variant="outline">{project.asignaciones_contratos[0]?.count || 0}</Badge>

@@ -13,7 +13,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { uploadDocument } from "@/app/actions/documents"
-import type { Empleado } from "@/lib/data/types/database"
+import { type InferSelectModel } from 'drizzle-orm'
+import { empleados } from '@/lib/db/schema'
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ACCEPTED_FILE_TYPES = [".pdf", ".doc", ".docx", ".jpg", ".jpeg", ".png"];
@@ -32,7 +33,8 @@ const formSchema = z.object({
   observaciones: z.string().optional(),
 })
 
-export function DocumentUploadForm({ employees }: { employees: Empleado[] }) {
+type Employee = InferSelectModel<typeof empleados>;
+export function DocumentUploadForm({ employees }: { employees: Employee[] }) {
   const router = useRouter()
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),

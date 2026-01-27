@@ -7,10 +7,12 @@ import { deactivateEmployeeSchema, DeactivateEmployeeFormValues } from '@/lib/va
 import { Button } from '@/components/ui/button'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import type { Empleado } from '@/lib/data/types/database'
+import { type InferSelectModel } from 'drizzle-orm'
+import { empleados } from '@/lib/db/schema'
 
+type Employee = InferSelectModel<typeof empleados>;
 interface DeactivateEmployeeFormProps {
-  employee: Empleado
+  employee: Employee
   onSuccess: () => void
   onError: (error: Error) => void
   onCancel: () => void
