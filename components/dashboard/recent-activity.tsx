@@ -40,8 +40,8 @@ export function RecentActivity({ history }: RecentActivityProps) {
               <div key={event.id} className="flex items-start justify-between border-b pb-4 last:border-0">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <Badge variant={getEventColor(event.tipo_evento)} className="capitalize">
-                      {event.tipo_evento.replace("_", " ")}
+                    <Badge variant={getEventColor(event.tipoEvento)} className="capitalize">
+                      {event.tipoEvento}
                     </Badge>
                     {event.empleado && (
                       <span className="font-medium">
@@ -52,7 +52,7 @@ export function RecentActivity({ history }: RecentActivityProps) {
                   <p className="text-sm text-muted-foreground">{event.descripcion}</p>
                 </div>
                 <span className="text-sm text-muted-foreground whitespace-nowrap">
-                  {new Date(event.fecha_evento).toLocaleDateString()}
+                  {event.fechaEvento}
                 </span>
               </div>
             ))}
