@@ -4,8 +4,8 @@ import { revalidatePath } from "next/cache"
 import { checkPermission } from "@/lib/services/auth/permissions"
 import { getAuthenticatedUser } from "@/lib/services/auth/user"
 import { getDb } from "@/lib/db"
-import { empleados, historialRelacionLaboral } from "@/lib/db/schema"
-import { eq } from "drizzle-orm"
+import { empleados, historialRelacionLaboral, asignacionesContratos, documentos } from "@/lib/db/schema"
+import { eq, desc, asc } from "drizzle-orm"
 
 import { z } from "zod";
 import { createEmployeeSchema, editEmployeeSchema } from "@/lib/validations/employee-schema";
@@ -72,6 +72,51 @@ export async function createEmployee(data: any) {
   } catch (error) {
     return { success: false, message: error instanceof Error ? error.message : "Database error", errors: null };
   }
+}
+
+export async function getEmployees(sort: 'recent' | 'alphabetical' = 'recent') {
+  const hasPermission = await checkPermission("employees.read");
+  if (!hasPermission) {
+    throw new Error("Unauthorized");
+  }
+  const db = await getDb();
+  const orderBy = sort === 'recent' ? [desc(empleados.createdAt)] : [asc(empleados.apellido)];
+  return db.query.empleados.findMany({ orderBy });
+}
+
+export async function getEmployeeById(id: string) {
+  const hasPermission = await checkPermission("employees.read");
+  if (!hasPermission) {
+    throw new Error("Unauthorized");
+  }
+  const db = await getDb();
+  return db.query.empleados.findFirst({ where: eq(empleados.id, id) });
+}
+
+export async function getEmployeeAssignments(employeeId: string) {
+  const hasPermission = await checkPermission("employees.read");
+  if (!hasPermission) {
+    throw new Error("Unauthorized");
+  }
+  const db = await getDb();
+  return db.query.asignacionesContratos.findMany({
+    where: eq(asignacionesContratos.empleadoId, employeeId),
+    with: { obra: true },
+    orderBy: [desc(asignacionesContratos.fechaInicio)]
+  });
+}
+
+export async function getEmployeeHistory(employeeId: string) {
+  const hasPermission = await checkPermission("employees.read");
+  if (!hasPermission) {
+    throw new Error("Unauthorized");
+  }
+  const db = await getDb();
+  return db.query.historialRelacionLaboral.findMany({
+    where: eq(historialRelacionLaboral.empleadoId, employeeId),
+    with: { obra: { columns: { nombre: true } } },
+    orderBy: [desc(historialRelacionLaboral.fechaEvento)]
+  });
 }
 
 export async function updateEmployee(id: string, data: any) {

@@ -5,7 +5,7 @@ import { getAuthenticatedUser } from "@/lib/services/auth/user"
 import { checkPermission } from "@/lib/services/auth/permissions"
 import { getDb } from "@/lib/db"
 import { obras, asignacionesContratos, historialRelacionLaboral, empleados } from "@/lib/db/schema"
-import { eq } from "drizzle-orm"
+import { eq, desc, count } from "drizzle-orm"
 import { z } from "zod";
 import { createProjectSchema } from "@/lib/validations/project-schema"
 import { createAssignmentSchema } from "@/lib/validations/assignment-schema"
@@ -222,4 +222,49 @@ export async function updateProject(projectId: string, data: any) {
   revalidatePath(`/projects/${updatedProject.id}`);
 
   return updatedProject;
+}
+
+export async function getProjects() {
+  const hasPermission = await checkPermission("projects.read");
+  if (!hasPermission) {
+    throw new Error("Unauthorized");
+  }
+  const db = await getDb();
+  const projects = await db.query.obras.findMany({
+    orderBy: [desc(obras.createdAt)],
+  });
+
+  const counts = await db.select({
+    obraId: asignacionesContratos.obraId,
+    count: count()
+  }).from(asignacionesContratos).groupBy(asignacionesContratos.obraId);
+
+  return projects.map(p => ({
+    ...p,
+    asignaciones_contratos: [{ count: counts.find(c => c.obraId === p.id)?.count || 0 }]
+  }));
+}
+
+export async function getProjectById(id: string) {
+  const hasPermission = await checkPermission("projects.read");
+  if (!hasPermission) {
+    throw new Error("Unauthorized");
+  }
+  const db = await getDb();
+  return db.query.obras.findFirst({ where: eq(obras.id, id) });
+}
+
+export async function getProjectAssignments(projectId: string) {
+  const hasPermission = await checkPermission("projects.read");
+  if (!hasPermission) {
+    throw new Error("Unauthorized");
+  }
+  const db = await getDb();
+  return db.query.asignacionesContratos.findMany({
+    where: eq(asignacionesContratos.obraId, projectId),
+    with: {
+      empleado: true,
+    },
+    orderBy: [desc(asignacionesContratos.fechaInicio)],
+  });
 }

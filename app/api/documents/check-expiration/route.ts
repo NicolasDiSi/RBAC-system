@@ -1,22 +1,24 @@
 import { NextResponse } from "next/server"
-import { getSupabaseServerClient } from "@/lib/services/supabase/server"
+import { getDb } from "@/lib/db"
+import { documentos } from "@/lib/db/schema"
+import { isNotNull, eq } from "drizzle-orm"
 
 // This endpoint can be called by a cron job to check and update document expiration status
 export async function GET() {
-  const supabase = await getSupabaseServerClient()
+  const db = await getDb()
 
   // Get all documents with expiration dates
-  const { data: documents } = await supabase.from("documentos").select("*").not("fecha_vencimiento", "is", null)
+  const docs = await db.select().from(documentos).where(isNotNull(documentos.fechaVencimiento));
 
-  if (!documents) {
+  if (!docs.length) {
     return NextResponse.json({ message: "No documents found" })
   }
 
   const updates = []
 
-  for (const doc of documents) {
+  for (const doc of docs) {
     const daysUntilExpiry = Math.floor(
-      (new Date(doc.fecha_vencimiento!).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24),
+      (new Date(doc.fechaVencimiento!).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24),
     )
 
     let newStatus = doc.estado
@@ -30,7 +32,7 @@ export async function GET() {
     }
 
     if (newStatus !== doc.estado) {
-      updates.push(supabase.from("documentos").update({ estado: newStatus }).eq("id", doc.id))
+      updates.push(db.update(documentos).set({ estado: newStatus }).where(eq(documentos.id, doc.id)))
     }
   }
 

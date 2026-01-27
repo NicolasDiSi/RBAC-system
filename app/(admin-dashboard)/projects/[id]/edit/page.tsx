@@ -1,6 +1,6 @@
 import { enforceAuthentication } from "@/lib/services/auth/protection";
 import { checkPermission } from "@/lib/services/auth/permissions";
-import { getSupabaseServerClient } from "@/lib/services/supabase/server";
+import { getProjectById } from "@/app/actions/projects";
 import { ProjectForm } from "@/components/projects/project-form";
 import { redirect, notFound } from "next/navigation";
 
@@ -12,8 +12,7 @@ export default async function EditProjectPage({ params }: { params: { id: string
     redirect("/unauthorized");
   }
 
-  const supabase = await getSupabaseServerClient();
-  const { data: project } = await supabase.from("obras").select("*").eq("id", params.id).single();
+  const project = await getProjectById(params.id);
 
   if (!project) {
     notFound();

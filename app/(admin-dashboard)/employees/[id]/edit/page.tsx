@@ -2,7 +2,7 @@ import { enforceAuthentication } from "@/lib/services/auth/protection";
 import { checkPermission } from "@/lib/services/auth/permissions";
 import { EmployeeForm } from "@/components/employees/employee-form";
 import { redirect, notFound } from "next/navigation";
-import { getSupabaseServerClient } from "@/lib/services/supabase/server";
+import { getEmployeeById } from "@/app/actions/employees";
 
 export default async function EditEmployeePage({ params }: { params: { id: string } }) {
   await enforceAuthentication();
@@ -12,12 +12,7 @@ export default async function EditEmployeePage({ params }: { params: { id: strin
     redirect("/unauthorized");
   }
 
-  const supabase = await getSupabaseServerClient();
-  const { data: employee } = await supabase
-    .from("empleados")
-    .select("*")
-    .eq("id", params.id)
-    .single();
+  const employee = await getEmployeeById(params.id);
 
   if (!employee) {
     notFound();

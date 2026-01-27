@@ -136,10 +136,10 @@ export const EmployeeForm: FC<EmployeeFormProps> = ({ employee }) => {
 							/>
 							<FormField
 								control={form.control}
-								name="fecha_nacimiento"
+								name="fechaNacimiento"
 								render={({ field }) => (
 									<FormItem>
-										<FormLabel>Date of Birth</FormLabel>
+										<FormLabel>Date of Birth *</FormLabel>
 										<FormControl>
 											<Input type="date" {...field} value={field.value ?? ''} />
 										</FormControl>
@@ -157,7 +157,7 @@ export const EmployeeForm: FC<EmployeeFormProps> = ({ employee }) => {
 									<FormItem>
 										<FormLabel>Phone</FormLabel>
 										<FormControl>
-											<Input type="tel" {...field} value={field.value ?? ''} />
+											<Input type="tel" {...field} value={ field.value ?? ''} />
 										</FormControl>
 										<FormMessage />
 									</FormItem>

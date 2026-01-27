@@ -1,15 +1,12 @@
 import { enforceAuthentication } from "@/lib/services/auth/protection";
 import { checkPermission } from "@/lib/services/auth/permissions";
-import { getSupabaseServerClient } from "@/lib/services/supabase/server";
+import { getDashboardStats } from "@/app/actions/dashboard";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, Building2, Briefcase, FileText, TrendingUp, UserCheck, Clock } from "lucide-react";
 import Link from "next/link";
 import { DashboardCharts } from "@/components/dashboard/dashboard-charts";
 import { RecentActivity } from "@/components/dashboard/recent-activity";
 import { redirect } from "next/navigation";
-import { Sidebar } from "@/components/dashboard/sidebar";
-import { Navbar } from "@/components/dashboard/Navbar";
-import { SidebarProvider } from "@/lib/context/SidebarContext";
 
 export default async function DashboardPage() {
 	const user = await enforceAuthentication();
@@ -19,47 +16,15 @@ export default async function DashboardPage() {
 		redirect("/unauthorized");
 	}
 
-	const supabase = await getSupabaseServerClient();
-
-	// Fetch KPI data
-	const { count: totalEmployees } = await supabase
-		.from("empleados")
-		.select("*", { count: "exact", head: true })
-		.eq("estado", "activo");
-
-	const { count: totalProjects } = await supabase
-		.from("obras")
-		.select("*", { count: "exact", head: true })
-		.eq("estado", "en_curso");
-
-	const { count: activeAssignments } = await supabase
-		.from("asignaciones_contratos")
-		.select("*", { count: "exact", head: true })
-		.eq("estado", "activo");
-
-	const { count: pendingDocuments } = await supabase
-		.from("documentos")
-		.select("*", { count: "exact", head: true })
-		.eq("estado", "por_vencer");
-
-	// Fetch data for charts
-	const { data: employeesByContract } = await supabase
-		.from("empleados")
-		.select("tipo_contrato")
-		.eq("estado", "activo");
-
-	const { data: projectsByStatus } = await supabase.from("obras").select("estado");
-
-	const { data: recentHistory } = await supabase
-		.from("historial_relacion_laboral")
-		.select(
-			`
-      *,
-      empleado:empleados(nombre, apellido)
-    `
-		)
-		.order("created_at", { ascending: false })
-		.limit(10);
+	const {
+		totalEmployees,
+		totalProjects,
+		activeAssignments,
+		pendingDocuments,
+		employeesByContract,
+		projectsByStatus,
+		recentHistory
+	} = await getDashboardStats();
 
 	const canViewReports = await checkPermission("reports.view");
 

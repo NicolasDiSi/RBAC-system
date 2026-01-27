@@ -4,6 +4,9 @@ import { revalidatePath } from "next/cache"
 import { getAuthenticatedUser } from "@/lib/services/auth/user"
 import { checkPermission } from "@/lib/services/auth/permissions"
 import  * as DocumentDAO from "@/lib/data/document"
+import { getDb } from "@/lib/db"
+import { documentos } from "@/lib/db/schema"
+import { desc, eq } from "drizzle-orm"
 
 export async function uploadDocument(formData: FormData) {
   const user = await getAuthenticatedUser()
@@ -70,4 +73,32 @@ export async function deleteDocument(documentId: string) {
 
   revalidatePath("/documents")
   revalidatePath(`/employees/${document.empleadoId}`)
+}
+
+export async function getDocuments() {
+  const hasPermission = await checkPermission("documents.read");
+  if (!hasPermission) {
+    throw new Error("Unauthorized");
+  }
+  const db = await getDb();
+  return db.query.documentos.findMany({
+    with: {
+      empleado: {
+        columns: { nombre: true, apellido: true, dni: true },
+      },
+    },
+    orderBy: [desc(documentos.fechaSubida)],
+  });
+}
+
+export async function getDocumentsByEmployeeId(employeeId: string) {
+  const hasPermission = await checkPermission("documents.read");
+  if (!hasPermission) {
+    throw new Error("Unauthorized");
+  }
+  const db = await getDb();
+  return db.query.documentos.findMany({
+    where: eq(documentos.empleadoId, employeeId),
+    orderBy: [desc(documentos.fechaSubida)]
+  });
 }

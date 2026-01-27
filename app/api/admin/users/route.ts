@@ -1,8 +1,7 @@
 
 import { NextResponse } from "next/server";
-import { hash } from "bcrypt";
-import { getSupabaseServerClient } from "@/lib/services/supabase/server";
 import { checkPermission } from "@/lib/services/auth/permissions";
+import * as UserDAO from "@/lib/data/user";
 import { randomBytes } from "crypto";
 
 export async function POST(request: Request) {
@@ -18,39 +17,23 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: "Email and name are required" }, { status: 400 });
     }
 
-    const supabase = await getSupabaseServerClient();
-
-    const { data: existingUser } = await supabase
-      .from("users")
-      .select("id")
-      .eq("email", email)
-      .single();
+    const existingUser = await UserDAO.getUserByEmail(email);
 
     if (existingUser) {
       return NextResponse.json({ message: "User with this email already exists" }, { status: 409 });
     }
 
     // Generate a random password
+    // UserDAO.createUser will hash this password
     const password = randomBytes(16).toString('hex');
-    const hashedPassword = await hash(password, 12);
 
-    const { data: newUser, error } = await supabase
-      .from("users")
-      .insert([
-        {
-          email,
-          hashed_password: hashedPassword,
-          name,
-          is_active: true, // Users created by admins are active by default
-        },
-      ])
-      .select("id")
-      .single();
-
-    if (error) {
-      console.error("Error creating user:", error);
-      return NextResponse.json({ message: "Failed to create user" }, { status: 500 });
-    }
+    const [newUser] = await UserDAO.createUser({
+      email,
+      hashedPassword: password,
+      name,
+      isActive: true, // Users created by admins are active by default
+      roleId: null,
+    });
 
     // For now, we are not sending the password to the client.
     // The next step will be to implement the secure sharing feature.

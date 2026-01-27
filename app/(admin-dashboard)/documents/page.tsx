@@ -1,6 +1,6 @@
 import { enforceAuthentication } from "@/lib/services/auth/protection";
 import { checkPermission } from "@/lib/services/auth/permissions";
-import { getSupabaseServerClient } from "@/lib/services/supabase/server";
+import { getDocuments } from "@/app/actions/documents";
 import { DocumentsTable } from "@/components/documents/documents-table";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -15,18 +15,8 @@ export default async function DocumentsPage() {
     redirect("/unauthorized");
   }
 
-  const supabase = await getSupabaseServerClient();
-
   // Fetch all documents with employee information
-  const { data: documents } = await supabase
-    .from("documentos")
-    .select(
-      `
-      *,
-      empleado:empleados(nombre, apellido, dni)
-    `
-    )
-    .order("fecha_subida", { ascending: false });
+  const documents = await getDocuments();
 
   const canCreate = await checkPermission("documents.create");
 
