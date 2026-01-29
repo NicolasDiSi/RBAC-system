@@ -226,7 +226,7 @@ export function EmployeeDetail({ employee, assignments, documents, history, perm
                       <TableRow key={doc.id}>
                         <TableCell className="font-medium capitalize">{doc.tipoDocumento.replace("_", " ")}</TableCell>
                         <TableCell>{doc.nombreArchivo}</TableCell>
-                        <TableCell>{new Date(doc.fechaSubida).toLocaleDateString()}</TableCell>
+                        <TableCell>{doc.fechaSubida ? new Date(doc.fechaSubida).toLocaleDateString() : "-"}</TableCell>
                         <TableCell>
                           <Badge variant={doc.estado === "vigente" ? "default" : "secondary"}>{doc.estado}</Badge>
                         </TableCell>

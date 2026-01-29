@@ -105,7 +105,7 @@ export function ProjectDetail({ project, assignments, employees, permissions }: 
 		}
 	};
 
-	const getStatusColor = (estado: string) => {
+	const getStatusColor = (estado: string | null) => {
 		switch (estado) {
 			case "en_curso":
 				return "default";
@@ -152,7 +152,7 @@ export function ProjectDetail({ project, assignments, employees, permissions }: 
 					</CardHeader>
 					<CardContent>
 						<Badge variant={getStatusColor(project.estado)} className="text-base capitalize">
-							{project.estado.replace("_", " ")}
+							{project?.estado?.replace("_", " ")}
 						</Badge>
 					</CardContent>
 				</Card>

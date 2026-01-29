@@ -24,7 +24,7 @@ export function ProjectsTable({ projects }: { projects: ProjectWithCount[] }) {
       project.codigo?.toLowerCase().includes(search.toLowerCase()),
   )
 
-  const getStatusColor = (estado: string) => {
+  const getStatusColor = (estado: string | null) => {
     switch (estado) {
       case "en_curso":
         return "default"
@@ -72,7 +72,7 @@ export function ProjectsTable({ projects }: { projects: ProjectWithCount[] }) {
                 <TableCell className="text-muted-foreground">{project.ubicacion || "-"}</TableCell>
                 <TableCell>
                   <Badge variant={getStatusColor(project.estado)} className="capitalize">
-                    {project.estado.replace("_", " ")}
+                    {project?.estado?.replace("_", " ")}
                   </Badge>
                 </TableCell>
                 <TableCell className="text-muted-foreground">

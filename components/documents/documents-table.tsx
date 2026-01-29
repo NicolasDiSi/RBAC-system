@@ -8,11 +8,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import Link from "next/link"
 import { useState } from "react"
 import { Download, Eye, AlertCircle } from "lucide-react"
-import type { Documento } from "@/lib/data/types/database"
+import { InferSelectModel } from "drizzle-orm"
+import { documentos } from "@/lib/db/schema"
 
-interface DocumentWithEmployee extends Documento {
+interface DocumentWithEmployee extends InferSelectModel<typeof documentos> {
   empleado: { nombre: string; apellido: string; dni: string } | null
 }
+
 
 export function DocumentsTable({ documents }: { documents: DocumentWithEmployee[] }) {
   const [search, setSearch] = useState("")
@@ -23,14 +25,14 @@ export function DocumentsTable({ documents }: { documents: DocumentWithEmployee[
       doc.empleado?.nombre.toLowerCase().includes(search.toLowerCase()) ||
       doc.empleado?.apellido.toLowerCase().includes(search.toLowerCase()) ||
       doc.empleado?.dni.includes(search) ||
-      doc.tipo_documento.toLowerCase().includes(search.toLowerCase())
+      doc.tipoDocumento.toLowerCase().includes(search.toLowerCase())
 
     const matchesStatus = statusFilter === "all" || doc.estado === statusFilter
 
     return matchesSearch && matchesStatus
   })
 
-  const getStatusColor = (estado: string) => {
+  const getStatusColor = (estado: string | null) => {
     switch (estado) {
       case "vigente":
         return "default"
@@ -92,24 +94,24 @@ export function DocumentsTable({ documents }: { documents: DocumentWithEmployee[
               <TableRow key={doc.id}>
                 <TableCell className="font-medium">
                   {doc.empleado ? (
-                    <Link href={`/employees/${doc.empleado_id}`} className="hover:underline">
+                    <Link href={`/employees/${doc.empleadoId}`} className="hover:underline">
                       {doc.empleado.nombre} {doc.empleado.apellido}
                     </Link>
                   ) : (
                     "-"
                   )}
                 </TableCell>
-                <TableCell className="capitalize">{doc.tipo_documento.replace("_", " ")}</TableCell>
-                <TableCell className="text-muted-foreground">{doc.nombre_archivo}</TableCell>
+                <TableCell className="capitalize">{doc.tipoDocumento.replace("_", " ")}</TableCell>
+                <TableCell className="text-muted-foreground">{doc.nombreArchivo}</TableCell>
                 <TableCell className="text-muted-foreground">
-                  {new Date(doc.fecha_subida).toLocaleDateString()}
+                  {doc.fechaSubida ? new Date(doc.fechaSubida).toLocaleDateString() : "-"}
                 </TableCell>
                 <TableCell>
-                  {doc.fecha_vencimiento ? (
+                  {doc.fechaVencimiento ? (
                     <div className="flex items-center gap-2">
-                      {isExpiringSoon(doc.fecha_vencimiento) && <AlertCircle className="h-4 w-4 text-orange-600" />}
-                      <span className={isExpiringSoon(doc.fecha_vencimiento) ? "text-orange-600" : ""}>
-                        {new Date(doc.fecha_vencimiento).toLocaleDateString()}
+                      {isExpiringSoon(doc.fechaVencimiento) && <AlertCircle className="h-4 w-4 text-orange-600" />}
+                      <span className={isExpiringSoon(doc.fechaVencimiento) ? "text-orange-600" : ""}>
+                        {new Date(doc.fechaVencimiento).toLocaleDateString()}
                       </span>
                     </div>
                   ) : (

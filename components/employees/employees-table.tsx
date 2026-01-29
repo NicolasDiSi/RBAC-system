@@ -22,7 +22,7 @@ export function EmployeesTable({ employees }: { employees: Employee[] }) {
       emp.dni.includes(search),
   )
 
-  const getStatusColor = (estado: string) => {
+  const getStatusColor = (estado: string | null) => {
     switch (estado) {
       case "activo":
         return "default"

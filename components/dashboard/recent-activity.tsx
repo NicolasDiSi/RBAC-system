@@ -2,11 +2,13 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import type { HistorialRelacionLaboral } from "@/lib/data/types/database"
+import { InferSelectModel } from "drizzle-orm";
+import { historialRelacionLaboral } from "@/lib/db/schema";
 
+type HistorialRelacionLaboral = InferSelectModel<typeof historialRelacionLaboral>;
 interface RecentActivityProps {
   history: (HistorialRelacionLaboral & {
-    empleado: { nombre: string; apellido: string } | null
+    empleado: { nombre: string; apellido: string }
   })[]
 }
 
