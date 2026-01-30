@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { DeactivateEmployeeForm } from "./deactivate-employee-form"
 import { toast } from "sonner"
 import { type InferSelectModel } from 'drizzle-orm'
-import { empleados, asignacionesContratos, documentos, historialRelacionLaboral, obras } from '@/lib/db/schema'
+import { empleados, asignacionesContratos, documentos, historialRelacionLaboral } from '@/lib/db/schema'
 
 type Employee = InferSelectModel<typeof empleados>;
 type Document = InferSelectModel<typeof documentos>;

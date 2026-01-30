@@ -7,7 +7,7 @@ interface GoogleSignInButtonProps {
   userId?: string; // New prop
 }
 
-export function GoogleSignInButton({ children, userId, ...props }: GoogleSignInButtonProps) {
+export function GoogleSignInButton({ children, userId }: GoogleSignInButtonProps) {
   const handleSignIn = () => {
     let redirectUrl = "/api/auth/google";
     if (userId) {

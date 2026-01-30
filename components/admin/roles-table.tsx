@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Shield, MoreHorizontal, PlusCircle, Edit, Trash2 } from "lucide-react" // Added MoreHorizontal, PlusCircle, Edit, Trash2
-import { updateRolePermissions, createRole, updateRole, deleteRole } from "@/app/actions/admin" // Added createRole, updateRole, deleteRole
+import { Shield, MoreHorizontal, PlusCircle, Edit, Trash2 } from "lucide-react"; // Added MoreHorizontal, PlusCircle, Edit, Trash2
+import { updateRolePermissions, createRole, updateRole, deleteRole } from "@/app/actions/admin"; // Added createRole, updateRole, deleteRole
 import { useRouter } from "next/navigation"
 import {
   DropdownMenu,
@@ -15,14 +15,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
   DropdownMenuContent
-} from '@/components/ui/dropdown-menu' // Added DropdownMenu imports
+} from '@/components/ui/dropdown-menu'; // Added DropdownMenu imports
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog' // Added Dialog imports
+} from '@/components/ui/dialog'; // Added Dialog imports
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,9 +32,9 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog' // Added AlertDialog imports
-import { RoleForm } from "./role-form" // Added RoleForm import
-import { toast } from "sonner" // Added toast import
+} from '@/components/ui/alert-dialog'; // Added AlertDialog imports
+import { RoleForm } from "./role-form"; // Added RoleForm import
+import { toast } from "sonner"; // Added toast import
 
 import { type InferSelectModel } from 'drizzle-orm'
 import { roles as rolesSchema, permissions as permissionsSchema } from '@/lib/db/schema'

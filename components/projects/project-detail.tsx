@@ -15,7 +15,7 @@ import Link from "next/link";
 import { ArrowLeft, Edit, MoreHorizontal, UserPlus } from "lucide-react";
 import { type InferSelectModel } from "drizzle-orm";
 import { obras, asignacionesContratos, empleados } from "@/lib/db/schema";
-import { createAssignment, endAssignment, updateAssignment } from "@/app/actions/projects";
+import { createAssignment, updateAssignment } from "@/app/actions/projects";
 import { useRouter } from "next/navigation";
 import { DropdownMenu } from "@radix-ui/react-dropdown-menu";
 import { DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "../ui/dropdown-menu";

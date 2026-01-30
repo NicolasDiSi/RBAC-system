@@ -1,4 +1,4 @@
-import { eq, count, ExtractTablesWithRelations } from 'drizzle-orm';
+import { eq, count } from 'drizzle-orm';
 import { getDb } from '../db';
 import { roles, permissions, rolePermissions } from '../db/schema/index';
 

@@ -1,7 +1,7 @@
 import 'server-only';
 import { cookies, headers } from 'next/headers';
 import { NextRequest } from 'next/server';
-import redis, { getRedisClient } from '@/lib/services/redis';
+import { getRedisClient } from '@/lib/services/redis';
 
 const COOKIE_NAME = 'app_session';
 const SESSION_DURATION_SECONDS = 60 * 60 * 24 * 7; // 7 days

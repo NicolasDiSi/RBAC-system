@@ -8,7 +8,6 @@ import {
   boolean,
   uniqueIndex,
   index,
-  primaryKey,
 } from 'drizzle-orm/pg-core';
 import { relations, sql } from 'drizzle-orm';
 import { check } from 'drizzle-orm/gel-core';

@@ -84,7 +84,7 @@ export function UsersTable({ users, roles, permissions }:{users:InferTableQuery<
       toast.success('User deleted successfully!')
       fetchUsers()
     } catch (error) {
-      toast.error(error.message || 'Failed to delete user.')
+      toast.error((error as Error).message || 'Failed to delete user.')
     } finally {
       setIsDeleteDialogOpen(false)
     }

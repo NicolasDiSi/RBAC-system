@@ -46,7 +46,7 @@ export function DashboardCharts({ employeesByContract, projectsByStatus }: Dashb
                 dataKey="value"
                 label
               >
-                {projectsByStatus.map((entry, index) => (
+                {projectsByStatus.map((_entry, index) => (
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Pie>
