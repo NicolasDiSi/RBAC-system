@@ -26,8 +26,13 @@ export async function getDashboardStats() {
     db.select({ count: count() }).from(obras).where(eq(obras.estado, "en_curso")),
     db.select({ count: count() }).from(asignacionesContratos).where(eq(asignacionesContratos.estado, "activo")),
     db.select({ count: count() }).from(documentos).where(eq(documentos.estado, "por_vencer")),
-    db.select({ tipo_contrato: empleados.tipoContrato }).from(empleados).where(eq(empleados.estado, "activo")),
-    db.select({ estado: obras.estado }).from(obras),
+    db.select({ name: empleados.tipoContrato, value: count() })
+      .from(empleados)
+      .where(eq(empleados.estado, "activo"))
+      .groupBy(empleados.tipoContrato),
+    db.select({ name: obras.estado, value: count() })
+      .from(obras)
+      .groupBy(obras.estado),
     db.query.historialRelacionLaboral.findMany({
       with: {
         empleado: { columns: { nombre: true, apellido: true } },
@@ -37,13 +42,25 @@ export async function getDashboardStats() {
     })
   ]);
 
+  const formatLabel = (str: string | null) => {
+    if (!str) return "Unknown";
+    const withSpaces = str.replace(/_/g, " ");
+    return withSpaces.charAt(0).toUpperCase() + withSpaces.slice(1);
+  };
+
   return {
     totalEmployees: totalEmployeesResult?.count ?? 0,
     totalProjects: totalProjectsResult?.count ?? 0,
     activeAssignments: activeAssignmentsResult?.count ?? 0,
     pendingDocuments: pendingDocumentsResult?.count ?? 0,
-    employeesByContract,
-    projectsByStatus,
+    employeesByContract: employeesByContract.map((item) => ({
+      name: formatLabel(item.name),
+      value: Number(item.value),
+    })),
+    projectsByStatus: projectsByStatus.map((item) => ({
+      name: formatLabel(item.name),
+      value: Number(item.value),
+    })),
     recentHistory,
   };
 }

@@ -4,40 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { BarChart, Bar, PieChart, Pie, Cell, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend } from "recharts"
 
 interface DashboardChartsProps {
-  employeesByContract: { tipo_contrato: string | null }[]
-  projectsByStatus: { estado: string }[]
+  employeesByContract: { name: string; value: number }[]
+  projectsByStatus: { name: string; value: number }[]
 }
 
 export function DashboardCharts({ employeesByContract, projectsByStatus }: DashboardChartsProps) {
-  // Process employee data
-  const contractData = employeesByContract.reduce(
-    (acc, emp) => {
-      const type = emp.tipo_contrato || "unknown"
-      acc[type] = (acc[type] || 0) + 1
-      return acc
-    },
-    {} as Record<string, number>,
-  )
-
-  const employeeChartData = Object.entries(contractData).map(([name, value]) => ({
-    name: name.replace("_", " ").charAt(0).toUpperCase() + name.replace("_", " ").slice(1),
-    value,
-  }))
-
-  // Process project data
-  const statusData = projectsByStatus.reduce(
-    (acc, project) => {
-      acc[project.estado] = (acc[project.estado] || 0) + 1
-      return acc
-    },
-    {} as Record<string, number>,
-  )
-
-  const projectChartData = Object.entries(statusData).map(([name, value]) => ({
-    name: name.replace("_", " ").charAt(0).toUpperCase() + name.replace("_", " ").slice(1),
-    value,
-  }))
-
   const COLORS = ["#3b82f6", "#2563eb", "#1d4ed8", "#1e40af", "#1e3a8a"]
 
   return (
@@ -48,7 +19,7 @@ export function DashboardCharts({ employeesByContract, projectsByStatus }: Dashb
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={employeeChartData}>
+            <BarChart data={employeesByContract}>
               <XAxis dataKey="name" />
               <YAxis />
               <Tooltip />
@@ -66,7 +37,7 @@ export function DashboardCharts({ employeesByContract, projectsByStatus }: Dashb
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
               <Pie
-                data={projectChartData}
+                data={projectsByStatus}
                 cx="50%"
                 cy="50%"
                 labelLine={false}
@@ -75,7 +46,7 @@ export function DashboardCharts({ employeesByContract, projectsByStatus }: Dashb
                 dataKey="value"
                 label
               >
-                {projectChartData.map((entry, index) => (
+                {projectsByStatus.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Pie>
