@@ -2,9 +2,13 @@
 import { eq } from 'drizzle-orm';
 import { getDb } from '../db';
 import { signupCodes } from '../db/schema';
+import { InferTableQuery, TableProps,} from '../db/types';
 
-export type SignupCode = typeof signupCodes.$inferSelect;
+
+export type SignupCode<T extends TableProps<'signupCodes'>['with'] | undefined = undefined> = InferTableQuery<'signupCodes',undefined,T>;
 export type NewSignupCode = typeof signupCodes.$inferInsert;
+
+
 
 export async function getSignupCodeByCode(code: string): Promise<SignupCode | undefined> {
   const db = await getDb();
@@ -20,7 +24,7 @@ export async function getSignupCodeByUsedId(userId: string): Promise<SignupCode 
   });
 }
 
-export async function getAllSignupCodes(): Promise<SignupCode[]> {
+export async function getAllSignupCodes(): Promise<SignupCode<{ role: true, usedByUser: { columns: { name: true, email: true } } }>[]> {
   const db = await getDb();
   return db.query.signupCodes.findMany({
     orderBy: (signupCodes, { desc }) => [desc(signupCodes.expiresAt)],

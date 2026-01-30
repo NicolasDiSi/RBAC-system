@@ -36,22 +36,19 @@ import { SignupCodeForm } from './signup-code-form'
 import { deleteSignupCode } from '@/app/actions/signupCode'
 import { Badge } from '@/components/ui/badge'
 import { format } from 'date-fns'
-import { type InferSelectModel } from 'drizzle-orm'
-import { roles as rolesSchema, users as usersSchema, signupCodes as signupCodesSchema } from '@/lib/db/schema'
-
-type Role = InferSelectModel<typeof rolesSchema>;
-type User = InferSelectModel<typeof usersSchema>;
-type SignupCode = InferSelectModel<typeof signupCodesSchema> & {
-  role: Role | null;
-  usedByUser: { name: string | null; email: string } | null;
-};
-
+import { SignupCode } from '@/lib/data/signupCode'
+import { Role } from '@/lib/data/role'
+import { User } from '@/lib/data/user'
 interface Permissions {
   canGenerate: boolean
   canDelete: boolean
 }
 
-export function SignupCodesTable({ signupCodes = [], users = [], roles = [], permissions }: { signupCodes: SignupCode[]; users: User[]; roles: Role[]; permissions: Permissions }) {
+export function SignupCodesTable({ signupCodes = [], users = [], roles = [], permissions }: {
+  users: User[];
+  signupCodes: SignupCode<{ role: true, usedByUser: { columns: { name: true, email: true } } }>[];
+  roles: Role[]; permissions: Permissions 
+}) {
   const router = useRouter()
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
