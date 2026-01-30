@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache"
 import { checkPermission } from "@/lib/services/auth/permissions"
 import { getAuthenticatedUser } from "@/lib/services/auth/user"
 import { getDb } from "@/lib/db"
-import { empleados, historialRelacionLaboral, asignacionesContratos, documentos } from "@/lib/db/schema"
+import { empleados, historialRelacionLaboral, asignacionesContratos } from "@/lib/db/schema"
 import { eq, desc, asc } from "drizzle-orm"
 
 import { z } from "zod";

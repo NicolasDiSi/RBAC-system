@@ -8,7 +8,7 @@ export async function GET(request: Request, { params }: { params: { roleId: stri
     if (!hasPermission) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 403 });
     }
-    const { roleId } = params;
+    const { roleId } = await params;
 
     if (!roleId) {
       return NextResponse.json({ message: 'Role ID is required' }, { status: 400 });

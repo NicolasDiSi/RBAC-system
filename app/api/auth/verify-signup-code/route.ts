@@ -23,8 +23,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: 'Signup code has expired' }, { status: 410 })
     }
 
-    // The code is valid. Return it to the client to proceed to the next step.
-    // DO NOT mark it as used here. It will be marked as used upon successful registration.
     return NextResponse.json(
       { message: 'Signup code verified successfully', code: signupCode.code },
       { status: 200 }

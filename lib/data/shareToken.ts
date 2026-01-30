@@ -2,6 +2,7 @@
 import { eq } from 'drizzle-orm';
 import { getDb } from '../db';
 import { shareTokens } from '../db/schema';
+import crypto from 'crypto';
 
 export type ShareToken = typeof shareTokens.$inferSelect;
 export type NewShareToken = typeof shareTokens.$inferInsert;
@@ -19,8 +20,10 @@ export async function createShareToken(
 ): Promise<ShareToken> {
   const db = await getDb();
   
-  // This is a simplified token generation. Use a more secure method in production.
-  const token = Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2);
+  // 1. Generate a secure, URL-safe, random token
+  const rawToken = crypto.randomBytes(32).toString('base64url');
+  // 2. Hash the token for database storage
+  const token = crypto.createHash('sha256').update(rawToken).digest('hex');
   const expiresAt = new Date(Date.now() + expirationDurationMinutes * 60 * 1000);
 
   const newShareToken: NewShareToken = {

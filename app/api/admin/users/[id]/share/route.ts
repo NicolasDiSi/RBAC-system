@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { checkPermission } from "@/lib/services/auth/permissions";
-import { createShareToken } from "@/app/actions/shareToken"; // Import the new action
+import { createShareToken } from "@/lib/data/shareToken";
 
 export async function POST(request: Request, context: { params: { id: string } }) {
   try{
-    const userId = context.params.id;
+    const userId = await context.params.id;
     const hasPermission = await checkPermission('users.generate_share_link'); // Use the new permission
     if (!hasPermission) {
       console.warn(`Forbidden: User lacks 'users.generate_share_link' permission for userId: ${userId}`);

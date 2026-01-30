@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseServerClient } from '@/lib/services/supabase/server';
-import { cookies } from 'next/headers';
 import crypto from 'crypto';
+import { getDb } from '@/lib/db';
+import { shareTokens, users } from '@/lib/db/schema';
+import { eq } from 'drizzle-orm';
+import { createSession } from '@/lib/services/auth/session';
 
 export async function POST(req: NextRequest) {
   const { token, clientTimezone } = await req.json();
@@ -10,28 +12,33 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ message: 'Share token is missing.' }, { status: 400 });
   }
 
-  const cookieStore = cookies();
-  const supabase = await getSupabaseServerClient(cookieStore);
+  const db = await getDb();
 
   // 1. Hash the incoming token to find it in the database
   const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
 
   // 2. Retrieve the token from the database
-  const { data: shareToken, error: tokenError } = await supabase
-    .from('share_tokens')
-    .select('*')
-    .eq('token', hashedToken)
-    .single();
+  const [data] = await db
+    .select({
+      shareToken: shareTokens,
+      user: users,
+    })
+    .from(shareTokens)
+    .innerJoin(users, eq(shareTokens.userId, users.id))
+    .where(eq(shareTokens.token, hashedToken))
+    .limit(1);
 
-  if (tokenError || !shareToken) {
+  if (!data) {
     return NextResponse.json({ message: 'Invalid or expired share link.' }, { status: 404 });
   }
 
+  const { shareToken, user } = data;
+
   // 3. Perform validation checks
   const now = new Date();
-  const expiresAt = new Date(shareToken.expires_at);
+  const expiresAt = new Date(shareToken.expiresAt);
 
-  if (shareToken.is_used) {
+  if (shareToken.isUsed) {
     return NextResponse.json({ message: 'This share link has already been used.' }, { status: 410 });
   }
 
@@ -39,27 +46,28 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ message: 'This share link has expired.' }, { status: 410 });
   }
 
-  if (shareToken.timezone_restriction && shareToken.timezone_restriction !== clientTimezone) {
+  if (shareToken.timezoneRestriction && shareToken.timezoneRestriction !== clientTimezone) {
     return NextResponse.json(
-      { message: `Access denied. This link is only valid in the ${shareToken.timezone_restriction} timezone.` },
+      { message: `Access denied. This link is only valid in the ${shareToken.timezoneRestriction} timezone.` },
       { status: 403 }
     );
   }
 
   // 4. Grant a new session for the user
-  const { error: sessionError } = await supabase.auth.admin.updateUserById(shareToken.user_id, {});
-  if (sessionError) {
-    console.error('Error granting session:', sessionError);
+  try {
+    await createSession(user.id, user.email, user.roleId);
+  } catch (error) {
+    console.error('Error granting session:', error);
     return NextResponse.json({ message: 'Failed to authenticate user.' }, { status: 500 });
   }
 
   // 5. Mark the token as used
-  const { error: updateError } = await supabase
-    .from('share_tokens')
-    .update({ is_used: true, updated_at: new Date().toISOString() })
-    .eq('id', shareToken.id);
-
-  if (updateError) {
+  try {
+    await db
+      .update(shareTokens)
+      .set({ isUsed: true, updatedAt: new Date() })
+      .where(eq(shareTokens.id, shareToken.id));
+  } catch (updateError) {
     console.error('Error marking token as used:', updateError);
     // Non-critical error, proceed with login
   }
