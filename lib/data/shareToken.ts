@@ -16,7 +16,9 @@ export async function getShareTokenByToken(token: string): Promise<ShareToken | 
 
 export async function createShareToken(
   userId: string,
-  expirationDurationMinutes: number
+  duration: string,
+  region: string,
+  timezone: string
 ): Promise<ShareToken> {
   const db = await getDb();
   
@@ -24,12 +26,15 @@ export async function createShareToken(
   const rawToken = crypto.randomBytes(32).toString('base64url');
   // 2. Hash the token for database storage
   const token = crypto.createHash('sha256').update(rawToken).digest('hex');
-  const expiresAt = new Date(Date.now() + expirationDurationMinutes * 60 * 1000);
+  const hours = parseInt(duration.replace('h', ''));
+  const expiresAt = new Date(Date.now() + hours * 60 * 60 * 1000);
 
-  const newShareToken: NewShareToken = {
+  const newShareToken: any = {
     token,
     userId,
     expiresAt,
+    region,
+    timezone,
   };
 
   const [createdToken] = await db.insert(shareTokens).values(newShareToken).returning();

@@ -4,7 +4,7 @@ import { EmployeeForm } from "@/components/employees/employee-form";
 import { redirect, notFound } from "next/navigation";
 import { getEmployeeById } from "@/app/actions/employees";
 
-export default async function EditEmployeePage({ params }: { params: { id: string } }) {
+export default async function EditEmployeePage({ params }: { params: Promise<{ id: string }>}) {
   const { id } = await params;
   await enforceAuthentication();
   const canUpdate = await checkPermission("employees.update");

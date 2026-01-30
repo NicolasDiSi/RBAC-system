@@ -4,7 +4,9 @@ import { getProjectById } from "@/app/actions/projects";
 import { ProjectForm } from "@/components/projects/project-form";
 import { redirect, notFound } from "next/navigation";
 
-export default async function EditProjectPage({ params }: { params: { id: string } }) {
+export default async function EditProjectPage({ params }: { params: Promise<{ id: string }>}) {
+  const { id } = await params;
+  
   await enforceAuthentication();
   const canUpdate = await checkPermission("projects.update");
 
@@ -12,7 +14,7 @@ export default async function EditProjectPage({ params }: { params: { id: string
     redirect("/unauthorized");
   }
 
-  const project = await getProjectById(params.id);
+  const project = await getProjectById(id);
 
   if (!project) {
     notFound();

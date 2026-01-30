@@ -2,9 +2,9 @@ import { NextResponse } from "next/server";
 import { checkPermission } from "@/lib/services/auth/permissions";
 import { createShareToken } from "@/lib/data/shareToken";
 
-export async function POST(request: Request, context: { params: { id: string } }) {
+export async function POST(request: Request, context: { params: Promise<{ id: string }>}) {
   try{
-    const userId = await context.params.id;
+    const { id:userId } = await context.params;
     const hasPermission = await checkPermission('users.generate_share_link'); // Use the new permission
     if (!hasPermission) {
       console.warn(`Forbidden: User lacks 'users.generate_share_link' permission for userId: ${userId}`);
@@ -31,7 +31,6 @@ export async function POST(request: Request, context: { params: { id: string } }
     return NextResponse.json({ shareLink }, { status: 201 });
 
   } catch (error: any) {
-    console.error(`Share link creation error for userId: ${userId}:`, error.message, error.stack);
     return NextResponse.json({ message: error.message || "Internal Server Error" }, { status: 500 });
   }
 }

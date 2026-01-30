@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import { getUserById } from '@/lib/data/user';
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }>}) {
   try {
-    const userId = await params.id;
+    const { id:userId } = await params;
 
     if (!userId) {
       return NextResponse.json({ message: 'User ID is required' }, { status: 400 });

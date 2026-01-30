@@ -1,3 +1,4 @@
+
 import { NextResponse } from 'next/server';
 import { checkPermission } from '@/lib/services/auth/permissions';
 import { getRoleById } from '@/lib/data/role';

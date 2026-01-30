@@ -1,10 +1,10 @@
-import { redirect, notFound } from "next/navigation"
+import { notFound } from "next/navigation"
 import { EmployeeDetail } from "@/components/employees/employee-detail"
 import { checkPermission } from "@/lib/services/auth/permissions"
 import { getEmployeeById, getEmployeeAssignments, getEmployeeHistory } from "@/app/actions/employees"
 import { getDocumentsByEmployeeId } from "@/app/actions/documents"
 
-export default async function EmployeeDetailPage({ params }: { params: { id: string } }) {
+export default async function EmployeeDetailPage({ params }: { params: Promise<{ id: string }>}) {
   const { id } = await params;
   const employeeId = String(id);
 
