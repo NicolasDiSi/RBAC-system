@@ -19,14 +19,13 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { type InferSelectModel } from "drizzle-orm";
-import { obras } from "@/lib/db/schema";
+import { InferTableQuery } from "@/lib/db/types";
 
-type Project = InferSelectModel<typeof obras>;
+type Project = Pick<InferTableQuery<'obras'>, 'id' |'nombre' | 'codigo' | 'ubicacion' | 'fechaInicio' | 'fechaFinEstimada' | 'fechaFinReal' | 'presupuesto' | 'descripcion' | 'estado'>;
 type ProjectFormValues = CreateProjectFormValues | EditProjectFormValues;
 
 interface ProjectFormProps {
-  project?: Project | null;
+  project: Project | null;
 }
 
 export const ProjectForm: FC<ProjectFormProps> = ({ project }) => {
@@ -37,30 +36,17 @@ export const ProjectForm: FC<ProjectFormProps> = ({ project }) => {
   const form = useForm<ProjectFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      nombre: "",
-      codigo: "",
-      ubicacion: "",
-      fechaInicio: "",
-      fechaFinEstimada: "",
-      presupuesto: 0,
-      descripcion: "",
+      nombre: project?.nombre ?? "",
+      codigo: project?.codigo ?? "",
+      ubicacion: project?.ubicacion ?? "",
+      fechaInicio: project?.fechaInicio ? new Date(project.fechaInicio).toISOString().split('T')[0] : "",
+      fechaFinEstimada: project?.fechaFinEstimada ? new Date(project.fechaFinEstimada).toISOString().split('T')[0] : "",
+      fechaFinReal: project?.fechaFinReal ? new Date(project.fechaFinReal).toISOString().split('T')[0] : "",
+      presupuesto: project?.presupuesto ? Number(project.presupuesto) : 0,
+      descripcion: project?.descripcion ?? "",
       estado: "planificada",
     },
   });
-
-  useEffect(() => {
-    if (project) {
-      form.reset({
-        ...project,
-        // Drizzle returns decimals as strings, but the form expects numbers for zod validation
-        presupuesto: project.presupuesto ? Number(project.presupuesto) : 0,
-        // Drizzle returns dates as Date objects, but form inputs expect 'yyyy-MM-dd' strings
-        fechaInicio: project.fechaInicio ? new Date(project.fechaInicio).toISOString().split('T')[0] : "",
-        fechaFinEstimada: project.fechaFinEstimada ? new Date(project.fechaFinEstimada).toISOString().split('T')[0] : "",
-        fechaFinReal: project.fechaFinReal ? new Date(project.fechaFinReal).toISOString().split('T')[0] : "",
-      });
-    }
-  }, [project, form]);
 
   const { isSubmitting } = form.formState;
 

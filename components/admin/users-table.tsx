@@ -34,11 +34,12 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog'
 import { ResendVerificationModal } from './resend-verification-modal'
-import { UserForm } from './user-form'
-import { ChangePasswordForm } from './change-password-form'
+import { UserForm, UserFormValues } from './user-form'
+import { ChangePasswordForm, ChangePasswordFormValues } from './change-password-form'
 import { ResetPasswordForm } from './reset-password-form'
+import { InferTableQuery } from '@/lib/db/types'
 
-export function UsersTable({ users, roles, permissions }) {
+export function UsersTable({ users, roles, permissions }:{users:InferTableQuery<'users',undefined,{role:true}>[], roles:InferTableQuery<'roles'>[], permissions:any}) {
   const [isResendVerificationModalOpen, setIsResendVerificationModalOpen] = useState(false)
   const [isChangePasswordDialogOpen, setIsChangePasswordDialogOpen] = useState(false)
   const [isResetPasswordDialogOpen, setIsResetPasswordDialogOpen] = useState(false)
@@ -52,7 +53,7 @@ export function UsersTable({ users, roles, permissions }) {
     router.refresh()
   }, [router])
 
-  const handleFormSubmit = async (values) => {
+  const handleFormSubmit = async (values:UserFormValues) => {
     const isEditing = !!editingUser
     const action = isEditing ? updateUser.bind(null, editingUser.id) : createUser
     const formData = new FormData()
@@ -64,16 +65,16 @@ export function UsersTable({ users, roles, permissions }) {
     await action(formData)
   }
 
-  const handleChangePasswordSubmit = async (values) => {
+  const handleChangePasswordSubmit = async (values: ChangePasswordFormValues) => {
     if (!selectedUser) return
     const formData = new FormData()
     formData.append('password', values.password)
-    formData.append('sign_out_user', String(values.sign_out_user))
+    formData.append('signOutUser', String(values.signOutUser))
     await updateUserPassword(selectedUser.id, formData)
   }
 
-  const handleResetPasswordSubmit = async (values) => {
-    await resetPasswordForEmail(values.email)
+  const handleResetPasswordSubmit = async ({email}: {email: string}) => {
+    await resetPasswordForEmail(email)
   }
 
   const handleDeleteUser = async () => {

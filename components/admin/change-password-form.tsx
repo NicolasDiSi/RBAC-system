@@ -11,7 +11,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 
-type ChangePasswordFormValues = z.infer<typeof changePasswordSchema>
+export type ChangePasswordFormValues = z.infer<typeof changePasswordSchema>
 
 interface ChangePasswordFormProps {
   onSubmit: (values: ChangePasswordFormValues) => Promise<void>

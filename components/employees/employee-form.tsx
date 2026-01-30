@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, type FC } from "react";
+import { type FC } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -19,14 +19,13 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { type InferSelectModel } from "drizzle-orm";
-import { empleados } from "@/lib/db/schema";
+import { InferTableQuery } from "@/lib/db/types";
 
-type Employee = InferSelectModel<typeof empleados>;
+type Employee = Pick<InferTableQuery<"empleados">, "id" | "nombre" | "apellido" | "dni" | "fechaNacimiento" | "telefono" | "email" | "direccion" | "fechaIngreso" | "fechaEgreso" | "tipoContrato" | "categoria" | "observaciones">;
 type EmployeeFormValues = CreateEmployeeFormValues | EditEmployeeFormValues;
 
 interface EmployeeFormProps {
-	employee?: Employee | null;
+	employee: Employee | null;
 }
 
 export const EmployeeForm: FC<EmployeeFormProps> = ({ employee }) => {
@@ -37,33 +36,20 @@ export const EmployeeForm: FC<EmployeeFormProps> = ({ employee }) => {
 	const form = useForm<EmployeeFormValues>({
 		resolver: zodResolver(formSchema),
 		defaultValues: {
-			nombre: "",
-			apellido: "",
-			dni: "",
-			fechaNacimiento: "",
-			telefono: "",
-			email: "",
-			direccion: "",
-			fechaIngreso: "",
-			fechaEgreso: "",
-			tipoContrato: "",
-			categoria: "",
-			observaciones: "",
+			nombre: employee?.nombre ?? "",
+			apellido: employee?.apellido ?? "",
+			dni: employee?.dni ?? "",
+			fechaNacimiento: employee?.fechaNacimiento ?? "",
+			telefono: employee?.telefono ?? "",
+			email: employee?.email ?? "",
+			direccion: employee?.direccion ?? "",
+			fechaIngreso: employee?.fechaIngreso ?? "",
+			fechaEgreso: employee?.fechaEgreso ?? undefined,
+			tipoContrato: employee?.tipoContrato ?? "",
+			categoria: employee?.categoria ?? "",
+			observaciones: employee?.observaciones ?? "",
 		},
 	});
-
-	useEffect(() => {
-		if (employee) {
-			form.reset({
-        ...employee,
-        // Drizzle returns dates as Date objects, but form inputs expect 'yyyy-MM-dd' strings
-        fechaNacimiento: employee.fechaNacimiento ? new Date(employee.fechaNacimiento).toISOString().split('T')[0] : "",
-        fechaIngreso: employee.fechaIngreso ? new Date(employee.fechaIngreso).toISOString().split('T')[0] : "",
-        fechaEgreso: employee.fechaEgreso ? new Date(employee.fechaEgreso).toISOString().split('T')[0] : "",
-
-      });
-		}
-	}, [employee, form]);
 
 	const { isSubmitting } = form.formState;
 
