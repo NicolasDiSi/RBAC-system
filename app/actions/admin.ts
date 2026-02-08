@@ -19,7 +19,7 @@ export async function createUser(data: FormData) {
     throw new Error("Unauthorized")
   }
 
-  const validatedFields = createUserSchema.safeParse(data);
+  const validatedFields = createUserSchema.safeParse(Object.fromEntries(data));
 
   if (!validatedFields.success) {
     throw new Error("Invalid user data.")
@@ -36,7 +36,7 @@ export async function updateUser(userId: string, data: FormData) {
     throw new Error("Unauthorized")
   }
 
-  const validatedFields = editUserSchema.safeParse(data);
+  const validatedFields = editUserSchema.safeParse(Object.fromEntries(data));
 
   if (!validatedFields.success) {
     throw new Error("Invalid user data.")
@@ -101,13 +101,13 @@ export async function getRoles() {
   return RoleDAO.getAllRoles()
 }
 
-export async function createRole(data: any) {
+export async function createRole(data: FormData) {
   const hasPermission = await checkPermission("roles.create")
   if (!hasPermission) {
     throw new Error("Unauthorized")
   }
 
-  const validatedFields = createRoleSchema.safeParse(data);
+  const validatedFields = createRoleSchema.safeParse(Object.fromEntries(data));
 
   if (!validatedFields.success) {
     throw new Error("Invalid role data.")
@@ -124,7 +124,7 @@ export async function updateRole(roleId: string, data: FormData) {
     throw new Error("Unauthorized")
   }
 
-  const validatedFields = editRoleSchema.safeParse(data);
+  const validatedFields = editRoleSchema.safeParse(Object.fromEntries(data));
 
   if (!validatedFields.success) {
     throw new Error("Invalid role data.")
@@ -152,7 +152,7 @@ export async function updateUserPassword(userId: string, data: FormData) {
     throw new Error("Unauthorized")
   }
 
-  const validatedFields = adminUpdatePasswordSchema.safeParse({...data});
+  const validatedFields = adminUpdatePasswordSchema.safeParse(Object.fromEntries(data));
 
   if (!validatedFields.success) {
     throw new Error(validatedFields.error.errors.map(e => e.message).join(', '));

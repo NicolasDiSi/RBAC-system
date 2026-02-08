@@ -47,7 +47,6 @@ export const UserForm: FC<UserFormProps> = ({ user, roles, onSubmit, onSuccess, 
     try {
       await onSubmit(values)
       onSuccess?.(values)
-      // Reset form only on successful creation
       if (!isEditing) {
         form.reset()
       }

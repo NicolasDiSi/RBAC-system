@@ -4,7 +4,10 @@ export const changePasswordSchema = z
   .object({
     password: z.string().min(8, { message: 'Password must be at least 8 characters long' }),
     confirmPassword: z.string(),
-    signOutUser: z.boolean().default(false),
+    signOutUser: z.preprocess(
+      (val) => val === 'true' || val === 'on' || val === true,
+      z.boolean().default(false)
+    ),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords don't match",
@@ -22,5 +25,8 @@ export const resetPasswordSchema = z.object({
 export const adminUpdatePasswordSchema = z.object({
 
   password: z.string().min(8, { message: 'Password must be at least 8 characters long' }),
-  signOutUser: z.boolean().default(false),
+  signOutUser: z.preprocess(
+    (val) => val === 'true' || val === 'on' || val === true,
+    z.boolean().default(false)
+  ),
 });

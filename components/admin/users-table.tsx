@@ -54,15 +54,17 @@ export function UsersTable({ users, roles, permissions }:{users:InferTableQuery<
   }, [router])
 
   const handleFormSubmit = async (values:UserFormValues) => {
-    const isEditing = !!editingUser
-    const action = isEditing ? updateUser.bind(null, editingUser.id) : createUser
     const formData = new FormData()
     Object.entries(values).forEach(([key, value]) => {
       if (key === 'password' && !value) return
       // Append empty string for null/undefined, otherwise convert to string
       formData.append(key, value === null || value === undefined ? '' : String(value))
     })
-    await action(formData)
+    if (editingUser) {
+      await updateUser(editingUser.id, formData)
+    } else {
+      await createUser(formData)
+    }
   }
 
   const handleChangePasswordSubmit = async (values: ChangePasswordFormValues) => {
