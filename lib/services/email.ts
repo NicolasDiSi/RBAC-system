@@ -80,10 +80,10 @@ function getEmailProvider(): EmailProvider {
 const QUEUE_KEY = 'email_queue';
 
 async function enqueueEmail(type: 'verification' | 'password_reset' | 'password_changed', data: { email: string; token?: string }) {
-  const redis = await getRedisClient();
   const job = { type, data, timestamp: Date.now() };
   
   try {
+    const redis = await getRedisClient();
     await redis.rpush(QUEUE_KEY, JSON.stringify(job));
   } catch (error) {
     console.error('Redis queue error, falling back to sync send:', error);
