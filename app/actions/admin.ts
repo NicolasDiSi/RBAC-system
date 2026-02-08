@@ -8,10 +8,9 @@ import { createRoleSchema, editRoleSchema } from "@/lib/validations/role-schema"
 import { adminUpdatePasswordSchema } from "@/lib/validations/password-schemas"
 import * as UserDAO from "@/lib/data/user"
 import * as RoleDAO from "@/lib/data/role"
-import { getSupabaseServerClient } from "@/lib/services/supabase/server"
 
 import { createVerificationToken } from "./verificationToken"
-import { sendVerificationEmail } from "@/lib/services/email"
+import { sendVerificationEmail, sendPasswordResetEmail } from "@/lib/services/email"
 
 export async function createUser(data: FormData) {
   const hasPermission = await checkPermission("users.create")
@@ -169,22 +168,19 @@ export async function updateUserPassword(userId: string, data: FormData) {
   revalidatePath("/admin/users")
 }
 
-// This action doesn't use our DAO because it uses Supabase's auth helpers,
-// which is a separate part of their API. This is fine.
 export async function resetPasswordForEmail(email: string) {
   const hasPermission = await checkPermission("users.update_password")
   if (!hasPermission) {
     throw new Error("Unauthorized")
   }
 
-  const supabase = await getSupabaseServerClient()
-  const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${process.env.NEXT_PUBLIC_BASE_URL}/auth/reset-password`,
-  })
-
-  if (error) {
-    throw new Error(error.message)
+  const user = await UserDAO.getUserByEmail(email)
+  if (!user) {
+    throw new Error("User not found.")
   }
+
+  const { token } = await createVerificationToken(user.id, 'password_reset')
+  await sendPasswordResetEmail(user.email, token)
 }
 
 export async function resendVerificationEmail(userId: string) {

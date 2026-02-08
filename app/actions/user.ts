@@ -2,10 +2,14 @@
 
 import * as UserDAO from '@/lib/data/user'
 import { createVerificationToken } from './verificationToken'
-import { sendPasswordResetEmail } from '@/lib/services/email'
+import { sendPasswordResetEmail, sendPasswordChangedEmail } from '@/lib/services/email'
 
 export async function updateUserPassword(userId: string, newPasswordPlain: string): Promise<void> {
   await UserDAO.updateUserPassword(userId, newPasswordPlain)
+  const user = await UserDAO.getUserById(userId)
+  if (user) {
+    await sendPasswordChangedEmail(user.email)
+  }
 }
 
 export async function linkGoogleAccountToUser(

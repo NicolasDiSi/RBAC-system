@@ -1,4 +1,9 @@
 import nodemailer from 'nodemailer';
+import { createElement } from 'react';
+import { render } from '@react-email/render';
+import { VerificationEmail } from './email/templates/VerificationEmail';
+import { PasswordResetEmail } from './email/templates/PasswordResetEmail';
+import { PasswordChangedEmail } from './email/templates/PasswordChangedEmail';
 import { getRedisClient } from './redis';
 
 const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
@@ -21,20 +26,31 @@ class NodemailerProvider implements EmailProvider {
   private transporter: nodemailer.Transporter;
 
   constructor() {
-    this.transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: parseInt(process.env.SMTP_PORT || '587', 10),
-      secure: process.env.SMTP_SECURE === 'true',
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-    });
+    if (process.env.EMAIL_PROVIDER === 'gmail') {
+      this.transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: process.env.GMAIL_USER || process.env.SMTP_USER,
+          pass: process.env.GMAIL_APP_PASSWORD || process.env.SMTP_PASS,
+        },
+      });
+    } else {
+      this.transporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST,
+        port: parseInt(process.env.SMTP_PORT || '587', 10),
+        secure: process.env.SMTP_SECURE === 'true',
+        auth: {
+          user: process.env.SMTP_USER,
+          pass: process.env.SMTP_PASS,
+        },
+      });
+    }
   }
 
   async sendEmail(payload: EmailPayload): Promise<void> {
+    const from = process.env.SMTP_FROM || process.env.SMTP_USER || process.env.GMAIL_USER;
     await this.transporter.sendMail({
-      from: process.env.SMTP_USER,
+      from,
       to: payload.to,
       subject: payload.subject,
       html: payload.html,
@@ -52,7 +68,8 @@ class ConsoleProvider implements EmailProvider {
 
 function getEmailProvider(): EmailProvider {
   // Simple config check to switch providers
-  if (process.env.NODE_ENV === 'development' && !process.env.SMTP_HOST) {
+  const hasConfig = process.env.SMTP_HOST || process.env.EMAIL_PROVIDER;
+  if (process.env.NODE_ENV === 'development' && !hasConfig) {
     return new ConsoleProvider();
   }
   return new NodemailerProvider();
@@ -62,7 +79,7 @@ function getEmailProvider(): EmailProvider {
 
 const QUEUE_KEY = 'email_queue';
 
-async function enqueueEmail(type: 'verification' | 'password_reset', data: { email: string; token: string }) {
+async function enqueueEmail(type: 'verification' | 'password_reset' | 'password_changed', data: { email: string; token?: string }) {
   const redis = await getRedisClient();
   const job = { type, data, timestamp: Date.now() };
   
@@ -85,11 +102,14 @@ async function processEmailJob(job: { type: string, data: any }) {
   if (type === 'verification') {
     const link = `${baseUrl}/api/auth/verify-token?token=${data.token}`;
     subject = 'Verify your email address';
-    html = `<h1>Welcome!</h1><p>Click to verify:</p><a href="${link}">Verify Email</a>`;
+    html = await render(createElement(VerificationEmail, { link }));
   } else if (type === 'password_reset') {
     const link = `${baseUrl}/auth/reset-password?token=${data.token}`;
     subject = 'Reset your password';
-    html = `<h1>Reset Password</h1><p>Click to reset:</p><a href="${link}">Reset Password</a>`;
+    html = await render(createElement(PasswordResetEmail, { link }));
+  } else if (type === 'password_changed') {
+    subject = 'Your password has been changed';
+    html = await render(createElement(PasswordChangedEmail, { email: data.email }));
   }
 
   await provider.sendEmail({ to: data.email, subject, html });
@@ -103,4 +123,8 @@ export async function sendVerificationEmail(email: string, token: string) {
 
 export async function sendPasswordResetEmail(email: string, token: string) {
   await enqueueEmail('password_reset', { email, token });
+}
+
+export async function sendPasswordChangedEmail(email: string) {
+  await enqueueEmail('password_changed', { email });
 }
