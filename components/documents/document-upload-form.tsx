@@ -1,6 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -12,12 +13,18 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { uploadDocument } from "@/app/actions/documents"
+import { uploadDocument, listDocumentFolders, createDocumentFolder } from "@/app/actions/documents"
 import { type InferSelectModel } from 'drizzle-orm'
 import { empleados } from '@/lib/db/schema'
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-const ACCEPTED_FILE_TYPES = [".pdf", ".doc", ".docx", ".jpg", ".jpeg", ".png"];
+const ACCEPTED_MIME_TYPES = [
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "image/jpeg",
+  "image/png",
+];
 
 const formSchema = z.object({
   empleadoId: z.string(),
@@ -26,11 +33,12 @@ const formSchema = z.object({
     .refine((files) => files?.length == 1, "File is required.")
     .refine((files) => files?.[0]?.size <= MAX_FILE_SIZE, `Max file size is 10MB.`)
     .refine(
-      (files) => ACCEPTED_FILE_TYPES.includes(files?.[0]?.type),
-      ".jpg, .jpeg, .png and .pdf files are accepted."
+      (files) => ACCEPTED_MIME_TYPES.includes(files?.[0]?.type),
+      "Accepted file types are: .pdf, .doc, .docx, .jpg, .jpeg, .png"
     ),
   fechaVencimiento: z.string().optional(),
   observaciones: z.string().optional(),
+  folder: z.string().optional(),
 })
 
 type Employee = InferSelectModel<typeof empleados>;
@@ -47,6 +55,29 @@ export function DocumentUploadForm({ employees }: { employees: Employee[] }) {
   })
 
   const { isSubmitting } = form.formState
+  const [folders, setFolders] = useState<string[]>([])
+  const [newFolderName, setNewFolderName] = useState("")
+
+  // load existing folders on mount
+  useEffect(() => {
+    async function load() {
+      try {
+        const items = await listDocumentFolders()
+        // extract folder names relative to documents/
+        const names = items
+          .filter((i: any) => i.type === "folder")
+          .map((i: any) => {
+            let key: string = i.key as string
+            key = key.replace(/^documents\//, "")
+            return key.replace(/\/$/, "")
+          })
+        setFolders(names)
+      } catch (err) {
+        console.error("failed to load folders", err)
+      }
+    }
+    load()
+  }, [])
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     const formData = new FormData()
@@ -58,6 +89,9 @@ export function DocumentUploadForm({ employees }: { employees: Employee[] }) {
     }
     if (values.observaciones) {
       formData.append('observaciones', values.observaciones)
+    }
+    if (values.folder) {
+      formData.append('folder', values.folder)
     }
 
     try {
@@ -157,6 +191,64 @@ export function DocumentUploadForm({ employees }: { employees: Employee[] }) {
                 </FormItem>
               )}
             />
+
+            <FormField
+              control={form.control}
+              name="folder"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Folder</FormLabel>
+                  <div className="flex items-center gap-2">
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value || ""}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select or type folder" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="">(root)</SelectItem>
+                        {folders.map((f) => (
+                          <SelectItem key={f} value={f}>
+                            {f}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={async () => {
+                        if (!newFolderName) return
+                        try {
+                          await createDocumentFolder(`documents/${newFolderName}`)
+                          setFolders((prev) => [...prev, newFolderName])
+                          field.onChange(newFolderName)
+                          setNewFolderName("")
+                        } catch (err) {
+                          console.error("could not create folder", err)
+                        }
+                      }}
+                    >
+                      New
+                    </Button>
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* input for new folder name to the side */}
+            <div className="flex gap-2 items-center">
+              <Input
+                placeholder="New folder name"
+                value={newFolderName}
+                onChange={(e) => setNewFolderName(e.target.value)}
+                className="max-w-sm"
+              />
+            </div>
 
             <FormField
               control={form.control}

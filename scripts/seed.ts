@@ -86,11 +86,11 @@ const PERMISSIONS = [
 ];
 
 const DOCUMENT_REQUEST_TASKS = [
-    { name: 'Copia de DNI', description: 'Presentar una copia escaneada del Documento Nacional de Identidad.' },
-    { name: 'Constancia de CUIL', description: 'Presentar la constancia de CUIL actualizada.' },
-    { name: 'Certificado de Antecedentes Penales', description: 'Presentar el certificado de antecedentes penales con una antigüedad no mayor a 6 meses.' },
-    { name: 'Título Secundario', description: 'Presentar una copia del título secundario o analítico.' },
-    { name: 'Examen Preocupacional', description: 'Presentar el apto médico del examen preocupacional.' },
+    { nombre: 'Copia de DNI', descripcion: 'Presentar una copia escaneada del Documento Nacional de Identidad.' },
+    { nombre: 'Constancia de CUIL', descripcion: 'Presentar la constancia de CUIL actualizada.' },
+    { nombre: 'Certificado de Antecedentes Penales', descripcion: 'Presentar el certificado de antecedentes penales con una antigüedad no mayor a 6 meses.' },
+    { nombre: 'Título Secundario', descripcion: 'Presentar una copia del título secundario o analítico.' },
+    { nombre: 'Examen Preocupacional', descripcion: 'Presentar el apto médico del examen preocupacional.' },
 ];
 
 const main = async () => {

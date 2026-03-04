@@ -25,7 +25,7 @@ export function DocumentsTable({ documents }: { documents: DocumentWithEmployee[
       doc.empleado?.nombre.toLowerCase().includes(search.toLowerCase()) ||
       doc.empleado?.apellido.toLowerCase().includes(search.toLowerCase()) ||
       doc.empleado?.dni.includes(search) ||
-      doc.tipoDocumento.toLowerCase().includes(search.toLowerCase())
+      doc.fileType.toLowerCase().includes(search.toLowerCase())
 
     const matchesStatus = statusFilter === "all" || doc.estado === statusFilter
 
@@ -45,13 +45,21 @@ export function DocumentsTable({ documents }: { documents: DocumentWithEmployee[
     }
   }
 
-  const isExpiringSoon = (fecha_vencimiento: string | null) => {
-    if (!fecha_vencimiento) return false
-    const daysUntilExpiry = Math.floor(
-      (new Date(fecha_vencimiento).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24),
-    )
-    return daysUntilExpiry <= 30 && daysUntilExpiry > 0
-  }
+const isExpiringSoon = (fecha_vencimiento: string | null): boolean => {
+  if (!fecha_vencimiento) return false;
+
+  const expiryDate = new Date(fecha_vencimiento);
+  const today = new Date();
+
+  // Reset time to midnight to compare only dates
+  today.setHours(0, 0, 0, 0);
+  expiryDate.setHours(0, 0, 0, 0);
+
+  const timeDiff = expiryDate.getTime() - today.getTime();
+  const daysUntilExpiry = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+
+  return daysUntilExpiry > 0 && daysUntilExpiry <= 30;
+};
 
   return (
     <div className="space-y-4">
@@ -81,6 +89,7 @@ export function DocumentsTable({ documents }: { documents: DocumentWithEmployee[
           <TableHeader>
             <TableRow>
               <TableHead>Employee</TableHead>
+              <TableHead>Folder</TableHead>
               <TableHead>Document Type</TableHead>
               <TableHead>File Name</TableHead>
               <TableHead>Upload Date</TableHead>
@@ -101,8 +110,17 @@ export function DocumentsTable({ documents }: { documents: DocumentWithEmployee[
                     "-"
                   )}
                 </TableCell>
-                <TableCell className="capitalize">{doc.tipoDocumento.replace("_", " ")}</TableCell>
-                <TableCell className="text-muted-foreground">{doc.nombreArchivo}</TableCell>
+                <TableCell>
+                  {doc.storageKey.startsWith("documents/")
+                    ? doc.storageKey
+                        .replace(/^documents\//, "")
+                        .split("/")
+                        .slice(0, -1)
+                        .join("/") || "(root)"
+                    : "(root)"}
+                </TableCell>
+                <TableCell className="capitalize">{doc.fileType.replace("_", " ")}</TableCell>
+                <TableCell className="text-muted-foreground">{doc.name}</TableCell>
                 <TableCell className="text-muted-foreground">
                   {doc.fechaSubida ? new Date(doc.fechaSubida).toLocaleDateString() : "-"}
                 </TableCell>

@@ -5,10 +5,9 @@ import { signupCodes } from '../db/schema';
 import { InferTableQuery, TableProps,} from '../db/types';
 
 
+//SignupCode Infers the Table from the Drizzle ORM if no relationships or columns are provided uses InferTableQuery to handle types accordingly
 export type SignupCode<T extends TableProps<'signupCodes'>['with'] | undefined = undefined> = InferTableQuery<'signupCodes',undefined,T>;
 export type NewSignupCode = typeof signupCodes.$inferInsert;
-
-
 
 export async function getSignupCodeByCode(code: string): Promise<SignupCode | undefined> {
   const db = await getDb();

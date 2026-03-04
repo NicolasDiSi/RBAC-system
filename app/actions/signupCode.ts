@@ -53,3 +53,9 @@ export async function deleteSignupCode(codeId: string): Promise<void> {
 
   await db.delete(signupCodes).where(eq(signupCodes.id, codeId))
 }
+
+export async function getAllSignupCodes() {
+  const db = await getDb()
+  const data = await db.query.signupCodes.findMany()
+  return data
+}

@@ -58,6 +58,24 @@ To select the storage provider, set the following environment variable in your `
 
 If `STORAGE_PROVIDER` is not set, the service defaults to using AWS S3.
 
+### Local Development with MinIO
+
+For local development and testing, the S3 driver is configured to be compatible with MinIO, an open-source, S3-compatible object storage server. This allows developers to run a complete storage environment locally without needing to connect to a live AWS S3 bucket.
+
+The `S3StorageService` implementation in `lib/services/storage/s3.ts` includes the `forcePathStyle: true` option, which is required for MinIO compatibility.
+
+To use a local MinIO instance, configure your `.env` file like this:
+
+-   **For MinIO**:
+    ```env
+    STORAGE_PROVIDER="aws" # Use the 'aws' provider for S3-compatible services
+    AWS_ACCESS_KEY_ID="minioadmin" # Default MinIO access key
+    AWS_SECRET_ACCESS_KEY="minioadmin" # Default MinIO secret key
+    AWS_S3_ENDPOINT="http://localhost:9000" # Your local MinIO server endpoint
+    AWS_S3_REGION="us-east-1" # Can be any valid region
+    AWS_S3_BUCKET_NAME="your-bucket-name" # The bucket you created in MinIO
+    ```
+
 ## 4. Security Model
 
 The security of file operations is paramount and is handled by centralizing authorization in the backend.
