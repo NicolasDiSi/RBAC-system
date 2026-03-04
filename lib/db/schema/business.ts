@@ -106,38 +106,60 @@ export const asignacionesContratos = pgTable(
 );
 
 export const documentos = pgTable(
-'documentos',
-{
+  'documentos',
+  {
     id: uuid('id').defaultRandom().primaryKey(),
-    empleadoId: uuid('empleado_id')
-    .notNull()
-    .references(() => empleados.id, { onDelete: 'cascade' }),
-    tipoDocumento: varchar('tipo_documento', { length: 100 }).notNull(),
-    nombreArchivo: varchar('nombre_archivo', { length: 255 }).notNull(),
-    urlArchivo: text('url_archivo').notNull(),
+    name: varchar('name', { length: 255 }).notNull(),
+    storageKey: text('storage_key').notNull(),
+    storageProvider: varchar('storage_provider', { length: 50 }).notNull(),
+    fileType: varchar('file_type', { length: 100 }).notNull(),
+    checksum: varchar('checksum', { length: 255 }),
+    folderId: uuid('folder_id').references(() => folders.id, {
+      onDelete: 'cascade',
+    }),
+    empleadoId: uuid('empleado_id').references(() => empleados.id, {
+      onDelete: 'set null',
+    }),
     fechaSubida: timestamp('fecha_subida', { withTimezone: true }).defaultNow(),
     fechaVencimiento: date('fecha_vencimiento'),
     estado: varchar('estado', { length: 50 }).default('vigente'),
     observaciones: text('observaciones'),
     uploadedBy: uuid('uploaded_by').references(() => users.id),
-},
-(table) => {
+  },
+  (table) => {
     return {
-    empleadoIdIndex: index('idx_documentos_empleado_id').on(table.empleadoId),
-    estadoIndex: index('idx_documentos_estado').on(table.estado),
-    tipoDocumentoIndex: index('idx_documentos_tipo').on(table.tipoDocumento),
-    fechaVencimientoIndex: index('idx_documentos_fecha_vencimiento').on(table.fechaVencimiento),
+      folderIdIndex: index('idx_documentos_folder_id').on(table.folderId),
+      empleadoIdIndex: index('idx_documentos_empleado_id').on(table.empleadoId),
+      fileTypeIndex: index('idx_documentos_tipo').on(table.fileType),
     };
-},
+  },
+);
+
+export const folders = pgTable(
+  'folders',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    name: varchar('name', { length: 255 }).notNull(),
+    path: text('path').notNull(),
+    parentId: uuid('parent_id'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+    createdBy: uuid('created_by').references(() => users.id),
+  },
+  (table) => {
+    return {
+      pathIndex: index('idx_folders_path').on(table.path),
+      parentIndex: index('idx_folders_parent_id').on(table.parentId),
+    };
+  },
 );
 
 export const historialRelacionLaboral = pgTable(
-'historial_relacion_laboral',
-{
+  'historial_relacion_laboral',
+  {
     id: uuid('id').defaultRandom().primaryKey(),
     empleadoId: uuid('empleado_id')
-    .notNull()
-    .references(() => empleados.id, { onDelete: 'cascade' }),
+      .notNull()
+      .references(() => empleados.id, { onDelete: 'cascade' }),
     fechaEvento: date('fecha_evento').notNull(),
     tipoEvento: varchar('tipo_evento', { length: 100 }).notNull(),
     descripcion: text('descripcion').notNull(),
@@ -147,38 +169,42 @@ export const historialRelacionLaboral = pgTable(
     observaciones: text('observaciones'),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
     createdBy: uuid('created_by').references(() => users.id),
-},
-(table) => {
+  },
+  (table) => {
     return {
-    empleadoIdIndex: index('idx_historial_empleado_id').on(table.empleadoId),
-    fechaEventoIndex: index('idx_historial_fecha_evento').on(table.fechaEvento),
-    tipoEventoIndex: index('idx_historial_tipo_evento').on(table.tipoEvento),
+      empleadoIdIndex: index('idx_historial_empleado_id').on(table.empleadoId),
+      fechaEventoIndex: index('idx_historial_fecha_evento').on(
+        table.fechaEvento,
+      ),
+      tipoEventoIndex: index('idx_historial_tipo_evento').on(table.tipoEvento),
     };
-},
+  },
 );
 
 // --- RELATIONS ---
 
 export const empleadosRelations = relations(empleados, ({ one, many }) => ({
-    createdBy: one(users, {
-      fields: [empleados.createdBy],
-      references: [users.id],
-    }),
-    asignacionesContratos: many(asignacionesContratos),
-    documentos: many(documentos),
-    historialRelacionLaboral: many(historialRelacionLaboral),
-  }));
-  
-  export const obrasRelations = relations(obras, ({ one, many }) => ({
-    createdBy: one(users, {
-      fields: [obras.createdBy],
-      references: [users.id],
-    }),
-    asignacionesContratos: many(asignacionesContratos),
-    historialRelacionLaboral: many(historialRelacionLaboral),
-  }));
-  
-  export const asignacionesContratosRelations = relations(asignacionesContratos, ({ one }) => ({
+  createdBy: one(users, {
+    fields: [empleados.createdBy],
+    references: [users.id],
+  }),
+  asignacionesContratos: many(asignacionesContratos),
+  documentos: many(documentos),
+  historialRelacionLaboral: many(historialRelacionLaboral),
+}));
+
+export const obrasRelations = relations(obras, ({ one, many }) => ({
+  createdBy: one(users, {
+    fields: [obras.createdBy],
+    references: [users.id],
+  }),
+  asignacionesContratos: many(asignacionesContratos),
+  historialRelacionLaboral: many(historialRelacionLaboral),
+}));
+
+export const asignacionesContratosRelations = relations(
+  asignacionesContratos,
+  ({ one }) => ({
     empleado: one(empleados, {
       fields: [asignacionesContratos.empleadoId],
       references: [empleados.id],
@@ -191,20 +217,43 @@ export const empleadosRelations = relations(empleados, ({ one, many }) => ({
       fields: [asignacionesContratos.createdBy],
       references: [users.id],
     }),
-  }));
-  
-  export const documentosRelations = relations(documentos, ({ one }) => ({
-    empleado: one(empleados, {
-      fields: [documentos.empleadoId],
-      references: [empleados.id],
-    }),
-    uploadedBy: one(users, {
-      fields: [documentos.uploadedBy],
-      references: [users.id],
-    }),
-  }));
-  
-  export const historialRelacionLaboralRelations = relations(historialRelacionLaboral, ({ one }) => ({
+  }),
+);
+
+export const documentosRelations = relations(documentos, ({ one }) => ({
+  empleado: one(empleados, {
+    fields: [documentos.empleadoId],
+    references: [empleados.id],
+  }),
+  uploadedBy: one(users, {
+    fields: [documentos.uploadedBy],
+    references: [users.id],
+  }),
+  folder: one(folders, {
+    fields: [documentos.folderId],
+    references: [folders.id],
+  }),
+}));
+
+export const foldersRelations = relations(folders, ({ one, many }) => ({
+  createdBy: one(users, {
+    fields: [folders.createdBy],
+    references: [users.id],
+  }),
+  documents: many(documentos),
+  parent: one(folders, {
+    fields: [folders.parentId],
+    references: [folders.id],
+    relationName: 'parent_folder',
+  }),
+  children: many(folders, {
+    relationName: 'parent_folder',
+  }),
+}));
+
+export const historialRelacionLaboralRelations = relations(
+  historialRelacionLaboral,
+  ({ one }) => ({
     empleado: one(empleados, {
       fields: [historialRelacionLaboral.empleadoId],
       references: [empleados.id],
@@ -217,4 +266,5 @@ export const empleadosRelations = relations(empleados, ({ one, many }) => ({
       fields: [historialRelacionLaboral.createdBy],
       references: [users.id],
     }),
-  }));
+  }),
+);

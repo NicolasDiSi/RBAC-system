@@ -1,60 +1,109 @@
-# Authentication and Authorization Flow
+# Database Setup Guide
 
-This document describes the entire authentication and authorization process in the application, from the initial user request to the final data retrieval from the database.
+This guide details how to set up the database for local development using Docker, Drizzle ORM, and the provided project scripts.
+
+## Prerequisites
+
+- [Docker](https://www.docker.com/products/docker-desktop/) must be installed and running.
+- [Node.js](https://nodejs.org/en) (version 20 or higher) and [pnpm](https://pnpm.io/installation) should be installed.
+
+## 1. Environment Configuration
+
+The application uses a `.env` file for environment variables, including the database connection string.
+
+1.  **Create the file**: In the root of the project, create a file named `.env`.
+2.  **Add Database URL**: Copy the contents of `.env.example` (if it exists) or add the following line. This URL points to the PostgreSQL database that will be created by Docker.
+
+    ```env
+    DATABASE_URL="postgresql://postgres:postgres@localhost:5432/postgres"
+    ```
+
+## 2. Running the Database
+
+The project is configured to run a PostgreSQL database using Docker Compose.
+
+1.  **Start the Container**: Run the following command to start the database container in the background.
+
+    ```bash
+    pnpm docker:up
+    ```
+
+    You can verify the container is running with `docker ps`. You should see a container named `rbac-system-db-1` or similar.
+
+## 3. Database Migrations & Seeding
+
+The project uses `drizzle-kit` to manage database schema and `tsx` to run seeding scripts.
+
+1.  **Install Dependencies**: If you haven't already, install the project dependencies.
+
+    ```bash
+    pnpm install
+    ```
+
+2.  **Apply Migrations**: The `drizzle/` directory contains migration files. To apply all migrations and synchronize the database with the schema defined in `lib/db/schema/`, run:
+
+    ```bash
+    pnpm db:push
+    ```
+    
+3.  **Seed the Database**: After migrating the schema, populate the database with initial data (e.g., default roles, permissions, and an admin user).
+
+    ```bash
+    pnpm db:seed
+    ```
+
+    This command executes the `scripts/seed.ts` file, which uses Drizzle ORM to insert the necessary initial records.
+
+
+# Architecture Overview: Authentication and Authorization
+
+This document describes the entire authentication and authorization process in the application.
 
 ## 1. Authentication: Who is the user?
 
-The authentication process determines and verifies the identity of a user.
+The authentication process determines and verifies the identity of a user. It remains largely the same as the previous implementation.
 
-1.  **Entry Point (`middleware.ts`)**: Most requests to the application are first handled by the Next.js middleware. This middleware's primary job is to protect routes.
-    *   It checks if a route is public (e.g., `/auth/login`, `/api/...`). If so, it allows the request to proceed without checking for a user session.
-    *   For all other routes, it calls `getSessionFromMiddleware(request)`.
-
-2.  **Session Handling (`lib/services/auth/session.ts`)**: The `getSessionFromMiddleware` function is responsible for retrieving the user's session.
-    *   It uses the Supabase SSR helper `createServerClient` to create a Supabase client that can access cookies from the request.
-    *   It calls `supabase.auth.getUser()` to get the currently authenticated user from the Supabase session, which is stored in a secure, HTTP-only cookie.
-
-3.  **Redirection**:
-    *   If `getSessionFromMiddleware` returns no session (i.e., the user is not logged in), the middleware redirects the user to the `/auth/login` page. It also appends a `redirect_to` query parameter, so the user can be sent back to their original page after logging in.
-    *   If a session exists, the middleware allows the request to continue to the requested page.
+1.  **Entry Point (`middleware.ts`)**: Most requests are first handled by the Next.js middleware, which protects routes by checking for a valid user session.
+2.  **Session Handling (`lib/services/auth/session.ts`)**: This service uses Supabase helpers to get the user's session from secure cookies.
+3.  **Redirection**: If no session exists, the user is redirected to the login page.
 
 ## 2. Authorization: What can the user do?
 
-Authorization happens *after* authentication and determines if the logged-in user has the necessary permissions to access or modify data. This is where Row-Level Security (RLS) and our custom functions come into play.
+Authorization happens *after* authentication. **This has been significantly changed from the old RLS-based system.** Authorization is now performed at the **application level** inside Server Actions.
 
-1.  **Setting User Context (`lib/data/query.ts`)**: Before any database query that requires authorization is executed, the application sets the current user's ID in the database session using a custom `set_config` function.
-    *   A function like `createAuthorizedSupabaseClient` retrieves the user's session and then calls a remote procedure call (RPC) to a PostgreSQL function `set_config('app.current_user_id', user.id)`.
-    *   This makes the user's ID available *within the context of the current database transaction*.
+1.  **Permission Checks in Server Actions**: Instead of relying on database-level RLS policies, every sensitive server action (e.g., in `app/actions/admin.ts`) explicitly checks for permissions at the beginning of its execution.
 
-2.  **Helper Functions (`04-create-helper-functions.sql`)**:
-    *   `get_current_user_id()`: This function safely retrieves the user ID that was just set by `set_config`. RLS policies use this to know who is making the request.
-    *   `check_permission(permission_name TEXT)`: This is the core of the authorization logic. It takes a permission name (e.g., `'users:read'`) and:
-        1.  Gets the current user's ID using `get_current_user_id()`.
-        2.  Looks up that user's `role_id` in the `public.users` table.
-        3.  Checks if a record exists in the `public.role_permissions` table that links the user's role to the required permission.
-        4.  Returns `true` if the user has the permission, and `false` otherwise.
+    ```typescript
+    // Example from app/actions/admin.ts
+    import { checkPermission } from "@/lib/services/auth/permissions"
 
-3.  **RLS Policies (`05-setup-rls-policies.sql`)**: These are the rules that Supabase applies to every database query. They act as a final, secure gatekeeper.
-    *   RLS is enabled for all main tables (`users`, `employees`, `documents`, `projects`).
-    *   Policies are defined using the `check_permission` function. For example, the policy for reading employees is:
-        ```sql
-        CREATE POLICY "Allow read access to users with permission" ON public.employees
-        FOR SELECT USING (check_permission('employees:read'));
-        ```
-        This means a `SELECT` query on the `employees` table will only return rows if `check_permission('employees:read')` returns `true` for the current user.
+    export async function createUser(data: FormData) {
+      const hasPermission = await checkPermission("users.create")
+      if (!hasPermission) {
+        throw new Error("Unauthorized")
+      }
+      // ... rest of the function
+    }
+    ```
 
-# Review of Setup Scripts
+2.  **The `checkPermission` Function (`lib/services/auth/permissions.ts`)**: This is the new core of the authorization logic.
+    1.  It gets the current user's session.
+    2.  It looks up the user's role in the database.
+    3.  It queries the `role_permissions` table (via Drizzle ORM) to see if the user's role is linked to the required permission.
+    4.  Returns `true` if the user has the permission, and `false` otherwise.
 
-Here is a summary of the SQL scripts and their purpose in setting up this system:
+This application-level approach centralizes permission logic within the Node.js environment, making it more portable and easier to debug than database-level RLS.
 
-*   **`00-master-setup.sql`**: (Assumed) Likely sets up the initial database configuration or extensions.
-*   **`01-create-rbac-tables.sql`**: Creates the core tables for Role-Based Access Control: `roles`, `permissions`, and the `role_permissions` join table.
-*   **`02-create-business-tables.sql`**: Creates the tables for the application's data: `users`, `employees`, `documents`, `projects`, etc. The `users` table here is the custom user management table, separate from Supabase's `auth.users`.
-*   **`03-seed-roles-permissions.sql`**: Populates the `roles` and `permissions` tables with initial data (e.g., 'admin', 'user' roles and 'users:read', 'documents:create' permissions) and links them in `role_permissions`.
-*   **`04-create-helper-functions.sql`**: Creates the crucial `get_current_user_id()` and `check_permission()` functions that RLS policies depend on.
-*   **`04-seed-default-user.sql`**: Seeds a default user, likely for testing or initial setup.
-*   **`05-setup-rls-policies.sql`**: Enables RLS and applies the permission-checking policies to the tables. This is what enforces the authorization rules at the database level.
-*   **`06-create-share-table.sql`**, **`07-create-signup-codes-table.sql`**, **`08-create-share-tokens-table.sql`**: These create additional tables for features related to sharing and user onboarding.
-*   **`99-teardown.sql`**: (Assumed) Contains scripts to reverse the setup, useful for testing and development.
+## From SQL to Drizzle ORM
 
-This entire setup creates a robust and secure system where Next.js middleware handles route-level authentication, and Supabase RLS, powered by custom SQL functions, handles data-level authorization for every single query.
+The project has fully transitioned from using raw SQL scripts for schema management to using **Drizzle ORM**.
+
+*   **Legacy Scripts**: The SQL files in the `scripts/` directory (like `01-create-rbac-tables.sql`, `05-setup-rls-policies.sql`, etc.) are **no longer used** to define the database structure. They serve as a reference to the project's history but are not executed.
+*   **Schema as Code**: The single source of truth for the database schema is now the set of TypeScript files in `lib/db/schema/`.
+*   **Migrations**: Schema changes are managed via `drizzle-kit`. To create a new migration after modifying the schema, run:
+    ```bash
+    pnpm db:generate
+    ```
+*   **Seeding**: The `scripts/03-seed-roles-permissions.sql` and `04-seed-default-user.sql` have been replaced by the **`scripts/seed.ts`** script, which uses Drizzle to insert data programmatically.
+
+This entire setup creates a robust and secure system where Next.js middleware handles route-level authentication, and application-level checks in Server Actions handle authorization.

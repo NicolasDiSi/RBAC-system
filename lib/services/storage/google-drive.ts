@@ -1,17 +1,6 @@
 import { google } from 'googleapis';
-import { StorageService } from './types';
-
-// Ensure all required environment variables are set.
-const requiredGoogleEnvVars = [
-  'GOOGLE_APPLICATION_CREDENTIALS',
-  'GOOGLE_DRIVE_FOLDER_ID',
-];
-
-for (const envVar of requiredGoogleEnvVars) {
-  if (!process.env[envVar]) {
-    throw new Error(`Missing required Google Drive environment variable for storage: ${envVar}`);
-  }
-}
+import { Readable } from 'stream';
+import { StorageService, UploadResult } from './types';
 
 const FOLDER_ID = process.env.GOOGLE_DRIVE_FOLDER_ID!;
 
@@ -19,12 +8,97 @@ const FOLDER_ID = process.env.GOOGLE_DRIVE_FOLDER_ID!;
  * Initializes the Google Drive API client using a service account.
  */
 function getDriveClient() {
+  // Ensure all required environment variables are set.
+  const requiredGoogleEnvVars = [
+    'GOOGLE_APPLICATION_CREDENTIALS',
+    'GOOGLE_DRIVE_FOLDER_ID',
+  ];
+
+  for (const envVar of requiredGoogleEnvVars) {
+    if (!process.env[envVar]) {
+      throw new Error(`Missing required Google Drive environment variable for storage: ${envVar}`);
+    }
+  }
+
   const auth = new google.auth.GoogleAuth({
     keyFile: process.env.GOOGLE_APPLICATION_CREDENTIALS,
     scopes: ['https://www.googleapis.com/auth/drive'],
   });
 
   return google.drive({ version: 'v3', auth });
+}
+
+async function getFolderIdByName(
+  name: string,
+  parentFolderId: string,
+): Promise<string | null> {
+  const drive = getDriveClient();
+  try {
+    const res = await drive.files.list({
+      q: `mimeType='application/vnd.google-apps.folder' and name='${name}' and '${parentFolderId}' in parents and trashed=false`,
+      fields: 'files(id)',
+      spaces: 'drive',
+    });
+
+    if (res.data.files && res.data.files.length > 0) {
+      return res.data.files[0].id || null;
+    }
+    return null;
+  } catch (error) {
+    console.error(`Failed to find folder ID for name: ${name}`, error);
+    // Returning null to allow fallback to the root folder.
+    return null;
+  }
+}
+
+async function upload(
+  file: File,
+  folderName?: string,
+): Promise<UploadResult> {
+  const drive = getDriveClient();
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const readable = new Readable();
+  readable.push(buffer);
+  readable.push(null);
+
+  let parentFolderId = FOLDER_ID;
+  if (folderName) {
+    const foundFolderId = await getFolderIdByName(folderName, FOLDER_ID);
+    if (foundFolderId) {
+      parentFolderId = foundFolderId;
+    } else {
+      console.warn(
+        `[Storage/GoogleDrive] Folder '${folderName}' not found. Defaulting to root folder.`,
+      );
+    }
+  }
+
+  const fileMetadata = {
+    name: file.name,
+    parents: [parentFolderId],
+  };
+
+  const media = {
+    mimeType: file.type,
+    body: readable,
+  };
+
+  try {
+    const response = await drive.files.create({
+      requestBody: fileMetadata,
+      media: media,
+      fields: 'id',
+    });
+
+    if (!response.data.id) {
+      throw new Error('Google Drive upload failed: No file ID returned.');
+    }
+
+    return { key: response.data.id, provider: 'google-drive' };
+  } catch (error) {
+    console.error('Google Drive upload failed:', error);
+    throw new Error('Could not upload file to Google Drive.');
+  }
 }
 
 /**
@@ -58,7 +132,7 @@ async function getFileId(key: string): Promise<string | null> {
 async function getPresignedUploadUrl(
   key: string,
   contentType: string,
-  size: number
+  size: number,
 ): Promise<{ url: string; key: string }> {
   const drive = getDriveClient();
 
@@ -85,18 +159,23 @@ async function getPresignedUploadUrl(
       },
       {
         responseType: 'full',
-      }
+      },
     );
 
     const uploadUrl = headers.location;
 
     if (!uploadUrl) {
-      throw new Error('Could not get resumable upload URL from Google Drive API.');
+      throw new Error(
+        'Could not get resumable upload URL from Google Drive API.',
+      );
     }
 
     return { url: uploadUrl, key };
   } catch (error) {
-    console.error('Failed to create Google Drive resumable upload session:', error);
+    console.error(
+      'Failed to create Google Drive resumable upload session:',
+      error,
+    );
     throw new Error('Could not initiate upload session with Google Drive.');
   }
 }
@@ -108,7 +187,9 @@ async function getPresignedUploadUrl(
 async function getPresignedDownloadUrl(key: string): Promise<{ url: string }> {
   // This URL doesn't grant access directly. It points to our Next.js API route
   // that will verify permissions and then stream the file.
-  return Promise.resolve({ url: `/api/documents/view/${encodeURIComponent(key)}` });
+  return Promise.resolve({
+    url: `/api/documents/view/${encodeURIComponent(key)}`,
+  });
 }
 
 /**
@@ -119,7 +200,9 @@ async function deleteFile(key: string): Promise<void> {
 
   if (!fileId) {
     // If the file doesn't exist, we can consider the deletion successful.
-    console.warn(`File with key "${key}" not found in Google Drive. Nothing to delete.`);
+    console.warn(
+      `File with key "${key}" not found in Google Drive. Nothing to delete.`,
+    );
     return;
   }
 
@@ -127,13 +210,28 @@ async function deleteFile(key: string): Promise<void> {
   try {
     await drive.files.delete({ fileId });
   } catch (error) {
-    console.error(`Failed to delete file with key "${key}" (ID: ${fileId}) from Google Drive:`, error);
+    console.error(
+      `Failed to delete file with key "${key}" (ID: ${fileId}) from Google Drive:`,
+      error,
+    );
     throw new Error('Could not delete file from Google Drive.');
   }
 }
 
 export const googleDriveDriver: StorageService = {
+  upload,
   getPresignedUploadUrl,
   getPresignedDownloadUrl,
   deleteFile,
+  createFolder: async (path: string) => {
+    throw new Error('createFolder is not yet implemented for Google Drive.');
+  },
+  moveFile: async (sourceKey: string, destinationKey: string) => {
+    throw new Error('moveFile is not yet implemented for Google Drive.');
+  },
+  listFolderContents: async (path: string) => {
+    throw new Error(
+      'listFolderContents is not yet implemented for Google Drive.',
+    );
+  },
 };

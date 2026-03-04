@@ -68,6 +68,14 @@ const PERMISSIONS = [
   { name: 'documents.update', description: 'Update document information', resource: 'documents', action: 'update' },
   { name: 'documents.delete', description: 'Delete documents', resource: 'documents', action: 'delete' },
 
+  // Document Request Management
+  { name: 'document_requests.create', description: 'Create new document request threads', resource: 'document_requests', action: 'create' },
+  { name: 'document_requests.read', description: 'Read document request threads and messages', resource: 'document_requests', action: 'read' },
+  { name: 'document_requests.reply', description: 'Reply to document request threads', resource: 'document_requests', action: 'reply' },
+  { name: 'document_requests.close', description: 'Close or reopen document request threads', resource: 'document_requests', action: 'close' },
+  { name: 'document_requests.review', description: 'Review and approve/reject submitted documents', resource: 'document_requests', action: 'review' },
+
+
   // Dashboard and Analytics
   { name: 'dashboard.view', description: 'View dashboard and home page', resource: 'dashboard', action: 'view' },
   { name: 'dashboard.export', description: 'Export reports to various formats', resource: 'dashboard', action: 'export' },
@@ -75,6 +83,14 @@ const PERMISSIONS = [
   // Reports and Analytics
   { name: 'reports.view', description: 'View reports and analytics dashboards', resource: 'reports', action: 'read' },
   { name: 'reports.export', description: 'Export reports to various formats', resource: 'reports', action: 'export' },
+];
+
+const DOCUMENT_REQUEST_TASKS = [
+    { name: 'Copia de DNI', description: 'Presentar una copia escaneada del Documento Nacional de Identidad.' },
+    { name: 'Constancia de CUIL', description: 'Presentar la constancia de CUIL actualizada.' },
+    { name: 'Certificado de Antecedentes Penales', description: 'Presentar el certificado de antecedentes penales con una antigüedad no mayor a 6 meses.' },
+    { name: 'Título Secundario', description: 'Presentar una copia del título secundario o analítico.' },
+    { name: 'Examen Preocupacional', description: 'Presentar el apto médico del examen preocupacional.' },
 ];
 
 const main = async () => {
@@ -122,7 +138,7 @@ const main = async () => {
       const viewerRoleId = '00000000-0000-0000-0000-000000000004';
 
       const superAdminPermissions = insertedPermissions.map(p => ({ roleId: superAdminRoleId, permissionId: p.id }));
-      const hrManagerPermissions = insertedPermissions.filter(p => ['employees', 'projects', 'assignments', 'documents', 'reports'].includes(p.resource)).map(p => ({ roleId: hrManagerRoleId, permissionId: p.id }));
+      const hrManagerPermissions = insertedPermissions.filter(p => ['employees', 'projects', 'assignments', 'documents', 'reports', 'document_requests'].includes(p.resource)).map(p => ({ roleId: hrManagerRoleId, permissionId: p.id }));
       const hrStaffPermissions = insertedPermissions.filter(p => ['employees', 'projects', 'assignments', 'documents', 'reports'].includes(p.resource) && ['create', 'read', 'update'].includes(p.action)).map(p => ({ roleId: hrStaffRoleId, permissionId: p.id }));
       const viewerPermissions = insertedPermissions.filter(p => p.action === 'read').map(p => ({ roleId: viewerRoleId, permissionId: p.id }));
 
@@ -135,7 +151,11 @@ const main = async () => {
       
       await tx.insert(schema.rolePermissions).values(allRolePermissions).onConflictDoNothing();
 
-      // 4. Seed Default Admin User
+      // 4. Seed Document Request Tasks
+      console.log('Seeding document request tasks...');
+      await tx.insert(schema.tareasSolicitudDocumento).values(DOCUMENT_REQUEST_TASKS).onConflictDoNothing();
+
+      // 5. Seed Default Admin User
       console.log('Seeding default admin user...');
       const hashedPassword = await bcrypt.hash('password123', 10);
       
