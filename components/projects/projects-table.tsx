@@ -7,10 +7,9 @@ import { Input } from "@/components/ui/input"
 import Link from "next/link"
 import { useState } from "react"
 import { Eye } from "lucide-react"
-import { type InferSelectModel } from 'drizzle-orm'
-import { obras } from '@/lib/db/schema'
+import { InferTableQuery } from "@/lib/db/types"
 
-type Project = InferSelectModel<typeof obras>;
+type Project = InferTableQuery<'obras',{nombre:true,codigo:true,ubicacion:true,fechaInicio:true, id:true, estado:true}>;
 interface ProjectWithCount extends Project {
   asignaciones_contratos: { count: number }[]
 }

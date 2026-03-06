@@ -8,13 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import Link from "next/link"
 import { useState } from "react"
 import { Download, Eye, AlertCircle } from "lucide-react"
-import { InferSelectModel } from "drizzle-orm"
-import { documentos } from "@/lib/db/schema"
+import { InferTableQuery } from "@/lib/db/types"
 
-interface DocumentWithEmployee extends InferSelectModel<typeof documentos> {
-  empleado: { nombre: string; apellido: string; dni: string } | null
-}
-
+interface DocumentWithEmployee extends InferTableQuery<'documentos',undefined,{empleado: {columns: { nombre: true; apellido: true; dni: true } }}>{}
 
 export function DocumentsTable({ documents }: { documents: DocumentWithEmployee[] }) {
   const [search, setSearch] = useState("")

@@ -47,7 +47,8 @@ interface Permissions {
 export function SignupCodesTable({ signupCodes = [], users = [], roles = [], permissions }: {
   users: User[];
   signupCodes: SignupCode<{ role: true, usedByUser: { columns: { name: true, email: true } } }>[];
-  roles: Role[]; permissions: Permissions 
+  roles: Role[];
+  permissions: Permissions 
 }) {
   const router = useRouter()
   const [isFormOpen, setIsFormOpen] = useState(false)

@@ -1,5 +1,5 @@
 'use client'
- 
+
 import { useRouter } from 'next/navigation'
 import { useState, useCallback } from 'react'
 import { UserPlus, Edit, Mail, ShieldAlert, Trash2, Repeat, MoreHorizontal } from 'lucide-react'
@@ -39,7 +39,11 @@ import { ChangePasswordForm, ChangePasswordFormValues } from './change-password-
 import { ResetPasswordForm } from './reset-password-form'
 import { InferTableQuery } from '@/lib/db/types'
 
-export function UsersTable({ users, roles, permissions }:{users:InferTableQuery<'users',undefined,{role:true}>[], roles:InferTableQuery<'roles'>[], permissions:any}) {
+export function UsersTable({ users, roles, permissions }: { 
+  users: InferTableQuery<'users', undefined, { role: true }>[],
+  roles: InferTableQuery<'roles'>[],
+  permissions: any
+  }) {
   const [isResendVerificationModalOpen, setIsResendVerificationModalOpen] = useState(false)
   const [isChangePasswordDialogOpen, setIsChangePasswordDialogOpen] = useState(false)
   const [isResetPasswordDialogOpen, setIsResetPasswordDialogOpen] = useState(false)
@@ -53,7 +57,7 @@ export function UsersTable({ users, roles, permissions }:{users:InferTableQuery<
     router.refresh()
   }, [router])
 
-  const handleFormSubmit = async (values:UserFormValues) => {
+  const handleFormSubmit = async (values: UserFormValues) => {
     const formData = new FormData()
     Object.entries(values).forEach(([key, value]) => {
       if (key === 'password' && !value) return
@@ -75,7 +79,7 @@ export function UsersTable({ users, roles, permissions }:{users:InferTableQuery<
     await updateUserPassword(selectedUser.id, formData)
   }
 
-  const handleResetPasswordSubmit = async ({email}: {email: string}) => {
+  const handleResetPasswordSubmit = async ({ email }: { email: string }) => {
     await resetPasswordForEmail(email)
   }
 

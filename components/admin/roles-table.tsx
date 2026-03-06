@@ -35,12 +35,11 @@ import {
 } from '@/components/ui/alert-dialog'; // Added AlertDialog imports
 import { RoleForm } from "./role-form"; // Added RoleForm import
 import { toast } from "sonner"; // Added toast import
+import { InferTableQuery } from "@/lib/db/types"
 
-import { type InferSelectModel } from 'drizzle-orm'
-import { roles as rolesSchema, permissions as permissionsSchema } from '@/lib/db/schema'
 
-type Role = InferSelectModel<typeof rolesSchema> & { permissionCount: number };
-type Permission = InferSelectModel<typeof permissionsSchema>;
+type Role = InferTableQuery<'roles', { id: true, name: true, description: true }>  & { permissionCount: number };
+type Permission = InferTableQuery<'permissions', {createdAt:false}>;
 
 export function RolesTable({ roles, permissions }: { roles: Role[]; permissions: Permission[] }) {
   const router = useRouter()

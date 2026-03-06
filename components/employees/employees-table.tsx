@@ -8,10 +8,9 @@ import Link from "next/link"
 import { useState } from "react"
 import { Eye, Edit, MoreHorizontal } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { type InferSelectModel } from 'drizzle-orm'
-import { empleados } from '@/lib/db/schema'
+import { InferTableQuery } from "@/lib/db/types"
 
-type Employee = InferSelectModel<typeof empleados>;
+type Employee = InferTableQuery<'empleados'>;
 export function EmployeesTable({ employees }: { employees: Employee[] }) {
   const [search, setSearch] = useState("")
 
