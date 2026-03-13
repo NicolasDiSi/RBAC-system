@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import Link from "next/link"
 import { useState } from "react"
 import { Eye } from "lucide-react"
-import type { Obra } from "@/lib/types/database"
+import type { Obra } from "@/lib/data/types/database"
 
 interface ProjectWithCount extends Obra {
   asignaciones_contratos: { count: number }[]
@@ -74,7 +74,7 @@ export function ProjectsTable({ projects }: { projects: ProjectWithCount[] }) {
                   </Badge>
                 </TableCell>
                 <TableCell className="text-muted-foreground">
-                  {project.fecha_inicio ? new Date(project.fecha_inicio).toLocaleDateString() : "-"}
+                  {project.fecha_inicio || "-"}
                 </TableCell>
                 <TableCell>
                   <Badge variant="outline">{project.asignaciones_contratos[0]?.count || 0}</Badge>

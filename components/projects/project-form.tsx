@@ -1,108 +1,223 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { createProject } from "@/app/actions/projects"
+import { useEffect, type FC } from "react";
+import { useRouter } from "next/navigation";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { toast } from "sonner";
 
-export function ProjectForm() {
-  const router = useRouter()
-  const [loading, setLoading] = useState(false)
+import { createProject, updateProject } from "@/app/actions/projects";
+import {
+  createProjectSchema,
+  editProjectSchema,
+  CreateProjectFormValues,
+  EditProjectFormValues,
+} from "@/lib/validations/project-schema";
+import { Button } from "@/components/ui/button";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { Obra } from "@/lib/data/types/database";
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    setLoading(true)
+type ProjectFormValues = CreateProjectFormValues | EditProjectFormValues;
 
-    const formData = new FormData(e.currentTarget)
-    const data = {
-      nombre: formData.get("nombre") as string,
-      codigo: formData.get("codigo") as string,
-      ubicacion: formData.get("ubicacion") as string,
-      fecha_inicio: formData.get("fecha_inicio") as string,
-      fecha_fin_estimada: formData.get("fecha_fin_estimada") as string,
-      presupuesto: formData.get("presupuesto") as string,
-      descripcion: formData.get("descripcion") as string,
-      estado: formData.get("estado") as string,
+interface ProjectFormProps {
+  project?: Obra | null;
+}
+
+export const ProjectForm: FC<ProjectFormProps> = ({ project }) => {
+  const router = useRouter();
+  const isEditing = !!project;
+  const formSchema = isEditing ? editProjectSchema : createProjectSchema;
+
+  const form = useForm<ProjectFormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      nombre: "",
+      codigo: "",
+      ubicacion: "",
+      fecha_inicio: "",
+      fecha_fin_estimada: "",
+      presupuesto: 0,
+      descripcion: "",
+      estado: "planificada",
+    },
+  });
+
+  useEffect(() => {
+    if (project) {
+      form.reset(project);
     }
+  }, [project, form]);
 
-    await createProject(data)
-    router.push("/projects")
-  }
+  const { isSubmitting } = form.formState;
+
+  const onSubmit = async (values: ProjectFormValues) => {
+    try {
+      if (isEditing && project) {
+        await updateProject(project.id, values as EditProjectFormValues);
+        toast.success("Project updated successfully!");
+        router.push("/projects");
+      } else {
+        await createProject(values as CreateProjectFormValues);
+        toast.success("Project created successfully!");
+        router.push("/projects");
+      }
+    } catch (error) {
+      toast.error("Failed to save project.");
+    }
+  };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <Card>
-        <CardHeader>
-          <CardTitle>Project Information</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="nombre">Project Name *</Label>
-              <Input id="nombre" name="nombre" required />
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <Card>
+          <CardHeader>
+            <CardTitle>Project Information</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid gap-4 md:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="nombre"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Project Name *</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="codigo"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Project Code</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="codigo">Project Code</Label>
-              <Input id="codigo" name="codigo" />
+
+            <FormField
+              control={form.control}
+              name="ubicacion"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Location</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="grid gap-4 md:grid-cols-3">
+              <FormField
+                control={form.control}
+                name="fecha_inicio"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Start Date</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="fecha_fin_estimada"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Estimated End Date</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="presupuesto"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Budget</FormLabel>
+                    <FormControl>
+                      <Input type="number" step="0.01" {...field} value={field.value ?? ''} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="ubicacion">Location</Label>
-            <Input id="ubicacion" name="ubicacion" />
-          </div>
+            <FormField
+              control={form.control}
+              name="estado"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Status</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="planificada">Planificada</SelectItem>
+                      <SelectItem value="en_curso">En Curso</SelectItem>
+                      <SelectItem value="finalizada">Finalizada</SelectItem>
+                      <SelectItem value="suspendida">Suspendida</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="space-y-2">
-              <Label htmlFor="fecha_inicio">Start Date</Label>
-              <Input id="fecha_inicio" name="fecha_inicio" type="date" />
+            <FormField
+              control={form.control}
+              name="descripcion"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Description</FormLabel>
+                  <FormControl>
+                    <Textarea rows={4} {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="flex justify-end space-x-2 pt-4">
+              <Button type="button" variant="outline" onClick={() => router.back()}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting
+                  ? isEditing
+                    ? "Saving..."
+                    : "Creating..."
+                  : isEditing
+                  ? "Save Changes"
+                  : "Create Project"}
+              </Button>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="fecha_fin_estimada">Estimated End Date</Label>
-              <Input id="fecha_fin_estimada" name="fecha_fin_estimada" type="date" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="presupuesto">Budget</Label>
-              <Input id="presupuesto" name="presupuesto" type="number" step="0.01" />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="estado">Status</Label>
-            <Select name="estado" defaultValue="planificada">
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="planificada">Planificada</SelectItem>
-                <SelectItem value="en_curso">En Curso</SelectItem>
-                <SelectItem value="finalizada">Finalizada</SelectItem>
-                <SelectItem value="suspendida">Suspendida</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="descripcion">Description</Label>
-            <Textarea id="descripcion" name="descripcion" rows={4} />
-          </div>
-
-          <div className="flex gap-4">
-            <Button type="submit" disabled={loading}>
-              {loading ? "Creating..." : "Create Project"}
-            </Button>
-            <Button type="button" variant="outline" onClick={() => router.back()}>
-              Cancel
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </form>
-  )
-}
+          </CardContent>
+        </Card>
+      </form>
+    </Form>
+  );
+};

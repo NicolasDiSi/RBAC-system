@@ -1,17 +1,16 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
-import { getSupabaseServerClient } from "@/lib/supabase/server"
-import { checkPermission, getCurrentUser } from "@/lib/auth/permissions"
+import { getAuthenticatedUser } from "@/lib/services/auth/user"
+import { checkPermission } from "@/lib/services/auth/permissions"
+import { DocumentDAO } from "@/lib/data/document"
 
 export async function uploadDocument(formData: FormData) {
+  const user = await getAuthenticatedUser()
   const hasPermission = await checkPermission("documents.create")
   if (!hasPermission) {
     throw new Error("Unauthorized")
   }
-
-  const user = await getCurrentUser()
-  const supabase = await getSupabaseServerClient()
 
   const empleado_id = formData.get("empleado_id") as string
   const tipo_documento = formData.get("tipo_documento") as string
@@ -23,12 +22,9 @@ export async function uploadDocument(formData: FormData) {
     throw new Error("No file provided")
   }
 
-  // In a real implementation, you would upload to Vercel Blob or similar storage
-  // For now, we'll create a placeholder URL
   const fileName = `${Date.now()}-${file.name}`
   const fileUrl = `/uploads/${fileName}` // Placeholder URL
 
-  // Calculate document status based on expiration date
   let estado = "vigente"
   if (fecha_vencimiento) {
     const daysUntilExpiry = Math.floor(
@@ -41,24 +37,18 @@ export async function uploadDocument(formData: FormData) {
     }
   }
 
-  const { data: document, error } = await supabase
-    .from("documentos")
-    .insert({
-      empleado_id,
-      tipo_documento,
-      nombre_archivo: file.name,
-      url_archivo: fileUrl,
-      fecha_vencimiento: fecha_vencimiento || null,
-      estado,
-      observaciones: observaciones || null,
-      uploaded_by: user?.id,
-    })
-    .select()
-    .single()
-
-  if (error) {
-    throw new Error(error.message)
+  const documentData = {
+    empleado_id,
+    tipo_documento,
+    nombre_archivo: file.name,
+    url_archivo: fileUrl,
+    fecha_vencimiento: fecha_vencimiento || null,
+    estado,
+    observaciones: observaciones || null,
+    uploaded_by: user?.id,
   }
+
+  const document = await DocumentDAO.create(documentData)
 
   revalidatePath("/documents")
   revalidatePath(`/employees/${empleado_id}`)
@@ -71,23 +61,12 @@ export async function deleteDocument(documentId: string) {
     throw new Error("Unauthorized")
   }
 
-  const supabase = await getSupabaseServerClient()
-
-  // Get document info before deleting
-  const { data: document } = await supabase.from("documentos").select("*").eq("id", documentId).single()
-
+  const document = await DocumentDAO.getById(documentId)
   if (!document) {
     throw new Error("Document not found")
   }
 
-  // Delete from database
-  const { error } = await supabase.from("documentos").delete().eq("id", documentId)
-
-  if (error) {
-    throw new Error(error.message)
-  }
-
-  // In a real implementation, you would also delete from storage (Vercel Blob)
+  await DocumentDAO.delete(documentId)
 
   revalidatePath("/documents")
   revalidatePath(`/employees/${document.empleado_id}`)

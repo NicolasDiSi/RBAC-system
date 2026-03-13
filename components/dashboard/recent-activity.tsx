@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import type { HistorialRelacionLaboral } from "@/lib/types/database"
+import type { HistorialRelacionLaboral } from "@/lib/data/types/database"
 
 interface RecentActivityProps {
   history: (HistorialRelacionLaboral & {

@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server"
-import { getSupabaseServerClient } from "@/lib/supabase/server"
+import { deleteSession } from "@/lib/services/auth/session"
 
 export async function POST() {
-  const supabase = await getSupabaseServerClient()
-  await supabase.auth.signOut()
-  return NextResponse.redirect(new URL("/login", process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"))
+  await deleteSession()
+  return NextResponse.redirect(new URL("/auth/login", process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"))
 }
