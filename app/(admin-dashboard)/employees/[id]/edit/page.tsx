@@ -2,9 +2,10 @@ import { enforceAuthentication } from "@/lib/services/auth/protection";
 import { checkPermission } from "@/lib/services/auth/permissions";
 import { EmployeeForm } from "@/components/employees/employee-form";
 import { redirect, notFound } from "next/navigation";
-import { getSupabaseServerClient } from "@/lib/services/supabase/server";
+import { getEmployeeById } from "@/app/actions/employees";
 
-export default async function EditEmployeePage({ params }: { params: { id: string } }) {
+export default async function EditEmployeePage({ params }: { params: Promise<{ id: string }>}) {
+  const { id } = await params;
   await enforceAuthentication();
   const canUpdate = await checkPermission("employees.update");
 
@@ -12,12 +13,7 @@ export default async function EditEmployeePage({ params }: { params: { id: strin
     redirect("/unauthorized");
   }
 
-  const supabase = await getSupabaseServerClient();
-  const { data: employee } = await supabase
-    .from("empleados")
-    .select("*")
-    .eq("id", params.id)
-    .single();
+  const employee = await getEmployeeById(id);
 
   if (!employee) {
     notFound();

@@ -1,25 +1,34 @@
-import { getSupabaseServiceRoleClient } from "@/lib/services/supabase/server";
-import { executeQuery } from "./query";
-import { Documento } from "./types/database";
 
-export type DocumentoInput = Omit<Partial<Documento>, 'id' | 'created_at' | 'fecha_subida'>;
+import { eq } from 'drizzle-orm';
+import { getDb } from '../db';
+import { documentos }  from '../db/schema';
 
-export const DocumentDAO = {
-  async getById(id: string): Promise<Documento> {
-    const supabase = await getSupabaseServiceRoleClient();
-    const query = supabase.from("documentos").select("*").eq("id", id).single();
-    return executeQuery(query);
-  },
+export type Documento = typeof documentos.$inferSelect;
+export type NewDocumento = typeof documentos.$inferInsert;
 
-  async create(documentData: DocumentoInput): Promise<Documento> {
-    const supabase = await getSupabaseServiceRoleClient();
-    const query = supabase.from("documentos").insert(documentData).select().single();
-    return executeQuery(query);
-  },
+export async function getDocumentById(id: string): Promise<Documento | undefined> {
+  const db = await getDb();
+  return db.query.documentos.findFirst({
+    where: eq(documentos.id, id),
+  });
+}
 
-  async delete(id: string): Promise<Documento[]> {
-    const supabase = await getSupabaseServiceRoleClient();
-    const query = supabase.from("documentos").delete().eq("id", id);
-    return executeQuery(query);
-  }
-};
+export async function createDocument(documentData: NewDocumento): Promise<Documento> {
+  const db = await getDb();
+  const [newDocument] = await db.insert(documentos).values(documentData).returning();
+  return newDocument;
+}
+
+export async function deleteDocument(id: string): Promise<Documento> {
+    const db = await getDb();
+    const [deletedDocument] = await db.delete(documentos).where(eq(documentos.id, id)).returning();
+    return deletedDocument;
+}
+
+export async function getDocumentsByEmployeeId(employeeId: string): Promise<Documento[]> {
+    const db = await getDb();
+    return db.query.documentos.findMany({
+        where: eq(documentos.empleadoId, employeeId),
+        orderBy: (documentos, { desc }) => [desc(documentos.fechaSubida)],
+    });
+}

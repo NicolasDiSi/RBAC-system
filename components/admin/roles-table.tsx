@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Shield, MoreHorizontal, PlusCircle, Edit, Trash2 } from "lucide-react" // Added MoreHorizontal, PlusCircle, Edit, Trash2
-import { updateRolePermissions, createRole, updateRole, deleteRole } from "@/app/actions/admin" // Added createRole, updateRole, deleteRole
+import { Shield, MoreHorizontal, PlusCircle, Edit, Trash2 } from "lucide-react"; // Added MoreHorizontal, PlusCircle, Edit, Trash2
+import { updateRolePermissions, createRole, updateRole, deleteRole } from "@/app/actions/admin"; // Added createRole, updateRole, deleteRole
 import { useRouter } from "next/navigation"
 import {
   DropdownMenu,
@@ -15,13 +15,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
   DropdownMenuContent
-} from '@/components/ui/dropdown-menu' // Added DropdownMenu imports
+} from '@/components/ui/dropdown-menu'; // Added DropdownMenu imports
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog' // Added Dialog imports
+} from '@/components/ui/dialog'; // Added Dialog imports
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,24 +32,15 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog' // Added AlertDialog imports
-import { RoleForm } from "./role-form" // Added RoleForm import
-import { toast } from "sonner" // Added toast import
+} from '@/components/ui/alert-dialog'; // Added AlertDialog imports
+import { RoleForm } from "./role-form"; // Added RoleForm import
+import { toast } from "sonner"; // Added toast import
 
-interface Role {
-  id: string
-  name: string
-  description: string | null
-  role_permissions: { count: number }[]
-}
+import { type InferSelectModel } from 'drizzle-orm'
+import { roles as rolesSchema, permissions as permissionsSchema } from '@/lib/db/schema'
 
-interface Permission {
-  id: string
-  name: string
-  description: string | null
-  resource: string
-  action: string
-}
+type Role = InferSelectModel<typeof rolesSchema> & { permissionCount: number };
+type Permission = InferSelectModel<typeof permissionsSchema>;
 
 export function RolesTable({ roles, permissions }: { roles: Role[]; permissions: Permission[] }) {
   const router = useRouter()
@@ -147,7 +139,7 @@ export function RolesTable({ roles, permissions }: { roles: Role[]; permissions:
                   </div>
                 </button>
                 <div className="flex items-center gap-2">
-                  <Badge variant="secondary">{role.role_permissions[0]?.count || 0} permissions</Badge>
+                  <Badge variant="secondary">{role.permissionCount || 0} permissions</Badge>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" className="h-8 w-8 p-0">
@@ -189,6 +181,9 @@ export function RolesTable({ roles, permissions }: { roles: Role[]; permissions:
 
       <Dialog open={isRoleFormOpen} onOpenChange={setIsRoleFormOpen}>
         <DialogContent>
+          <DialogDescription>
+            {editingRole ? 'Edit Role' : 'Create New Role'}
+          </DialogDescription>
           <DialogHeader>
             <DialogTitle>{editingRole ? 'Edit Role' : 'Create New Role'}</DialogTitle>
           </DialogHeader>
@@ -239,7 +234,7 @@ function PermissionsEditor({
     const response = await fetch(`/api/admin/roles/${roleId}/permissions`); // Assuming this API exists
     if (response.ok) {
       const data = await response.json();
-      setSelectedPermissions(new Set(data.permissionIds));
+      setSelectedPermissions(new Set(data));
     } else {
       toast.error('Failed to fetch role permissions.');
     }

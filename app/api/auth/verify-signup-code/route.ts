@@ -15,16 +15,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: 'Invalid signup code' }, { status: 404 })
     }
 
-    if (signupCode.is_used) {
+    if (signupCode.isUsed) {
       return NextResponse.json({ message: 'Signup code has already been used' }, { status: 409 })
     }
 
-    if (new Date(signupCode.expires_at) < new Date()) {
+    if (new Date(signupCode.expiresAt) < new Date()) {
       return NextResponse.json({ message: 'Signup code has expired' }, { status: 410 })
     }
 
-    // The code is valid. Return it to the client to proceed to the next step.
-    // DO NOT mark it as used here. It will be marked as used upon successful registration.
     return NextResponse.json(
       { message: 'Signup code verified successfully', code: signupCode.code },
       { status: 200 }

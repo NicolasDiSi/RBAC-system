@@ -21,7 +21,7 @@ export async function GET(request: Request) {
     // If userId is provided, link the Google account to the existing inactive user
     if (userId) {
       const existingUser = await getUserById(userId);
-      if (!existingUser || existingUser.is_active) {
+      if (!existingUser || existingUser.isActive) {
         // If user doesn't exist or is already active, something is wrong with the flow
         await supabase.auth.signOut(); // Sign out the newly created session
         return NextResponse.redirect(new URL("/auth/enter-code?error=invalid_user_id", request.url));

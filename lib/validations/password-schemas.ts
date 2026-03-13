@@ -3,12 +3,15 @@ import { z } from 'zod'
 export const changePasswordSchema = z
   .object({
     password: z.string().min(8, { message: 'Password must be at least 8 characters long' }),
-    confirm_password: z.string(),
-    sign_out_user: z.boolean().default(false),
+    confirmPassword: z.string(),
+    signOutUser: z.preprocess(
+      (val) => val === 'true' || val === 'on' || val === true,
+      z.boolean().default(false)
+    ),
   })
-  .refine((data) => data.password === data.confirm_password, {
+  .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords don't match",
-    path: ['confirm_password'],
+    path: ['confirmPassword'],
   })
 
 export const resetPasswordSchema = z.object({
@@ -22,5 +25,8 @@ export const resetPasswordSchema = z.object({
 export const adminUpdatePasswordSchema = z.object({
 
   password: z.string().min(8, { message: 'Password must be at least 8 characters long' }),
-  sign_out_user: z.boolean().default(false),
+  signOutUser: z.preprocess(
+    (val) => val === 'true' || val === 'on' || val === true,
+    z.boolean().default(false)
+  ),
 });

@@ -13,8 +13,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import { ArrowLeft, Edit, MoreHorizontal, UserPlus } from "lucide-react";
-import type { Obra, AsignacionContrato, Empleado } from "@/lib/data/types/database";
-import { createAssignment, endAssignment, updateAssignment } from "@/app/actions/projects";
+import { type InferSelectModel } from "drizzle-orm";
+import { obras, asignacionesContratos, empleados } from "@/lib/db/schema";
+import { createAssignment, updateAssignment } from "@/app/actions/projects";
 import { useRouter } from "next/navigation";
 import { DropdownMenu } from "@radix-ui/react-dropdown-menu";
 import { DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "../ui/dropdown-menu";
@@ -22,10 +23,16 @@ import { EndAssignmentForm } from "./end-assignment-form";
 import { DialogDescription } from "../ui/dialog";
 import { toast } from "sonner";
 
+type Project = InferSelectModel<typeof obras>;
+type Employee = InferSelectModel<typeof empleados>;
+type Assignment = InferSelectModel<typeof asignacionesContratos> & {
+	empleado: Employee;
+};
+
 interface ProjectDetailProps {
-	project: Obra;
-	assignments: (AsignacionContrato & { empleado: Empleado })[];
-	employees: Empleado[];
+	project: Project;
+	assignments: Assignment[];
+	employees: Employee[];
 	permissions: {
 		canUpdate: boolean;
 	};
@@ -36,15 +43,15 @@ export function ProjectDetail({ project, assignments, employees, permissions }: 
 	const [dialogOpen, setDialogOpen] = useState(false);
 	const [endAssignmentDialogOpen, setEndAssignmentDialogOpen] = useState(false);
 	const [editAssignmentDialogOpen, setEditAssignmentDialogOpen] = useState(false);
-	const [selectedAssignment, setSelectedAssignment] = useState<(AsignacionContrato & { empleado: Empleado }) | null>(null);
+	const [selectedAssignment, setSelectedAssignment] = useState<Assignment | null>(null);
 	const [loading, setLoading] = useState(false);
 
-	const openEndAssignmentDialog = (assignment: AsignacionContrato & { empleado: Empleado }) => {
+	const openEndAssignmentDialog = (assignment: Assignment) => {
 		setSelectedAssignment(assignment);
 		setEndAssignmentDialogOpen(true);
 	  };
 
-	const openEditAssignmentDialog = (assignment: AsignacionContrato & { empleado: Empleado }) => {
+	const openEditAssignmentDialog = (assignment: Assignment) => {
 		setSelectedAssignment(assignment);
 		setEditAssignmentDialogOpen(true);
 	};
@@ -55,11 +62,11 @@ export function ProjectDetail({ project, assignments, employees, permissions }: 
 
 		const formData = new FormData(e.currentTarget);
 		const data = {
-			empleado_id: formData.get("empleado_id") as string,
-			obra_id: project.id,
-			fecha_inicio: formData.get("fecha_inicio") as string,
-			fecha_fin: formData.get("fecha_fin") as string,
-			tipo_contrato: formData.get("tipo_contrato") as string,
+			empleadoId: formData.get("empleadoId") as string,
+			obraId: project.id,
+			fechaInicio: formData.get("fechaInicio") as string,
+			fechaFin: formData.get("fechaFin") as string,
+			tipoContrato: formData.get("tipoContrato") as string,
 			categoria: formData.get("categoria") as string,
 			salario: formData.get("salario") as string,
 		};
@@ -77,11 +84,11 @@ export function ProjectDetail({ project, assignments, employees, permissions }: 
 		setLoading(true);
 		const formData = new FormData(e.currentTarget);
 		const data = {
-			empleado_id: formData.get("empleado_id") as string,
-			obra_id: project.id,
-			fecha_inicio: formData.get("fecha_inicio") as string,
-			fecha_fin: formData.get("fecha_fin") as string,
-			tipo_contrato: formData.get("tipo_contrato") as string,
+			empleadoId: formData.get("empleadoId") as string,
+			obraId: project.id,
+			fechaInicio: formData.get("fechaInicio") as string,
+			fechaFin: formData.get("fechaFin") as string,
+			tipoContrato: formData.get("tipoContrato") as string,
 			categoria: formData.get("categoria") as string,
 			salario: formData.get("salario") as string,
 		};
@@ -98,7 +105,7 @@ export function ProjectDetail({ project, assignments, employees, permissions }: 
 		}
 	};
 
-	const getStatusColor = (estado: string) => {
+	const getStatusColor = (estado: string | null) => {
 		switch (estado) {
 			case "en_curso":
 				return "default";
@@ -145,7 +152,7 @@ export function ProjectDetail({ project, assignments, employees, permissions }: 
 					</CardHeader>
 					<CardContent>
 						<Badge variant={getStatusColor(project.estado)} className="text-base capitalize">
-							{project.estado.replace("_", " ")}
+							{project?.estado?.replace("_", " ")}
 						</Badge>
 					</CardContent>
 				</Card>
@@ -185,18 +192,18 @@ export function ProjectDetail({ project, assignments, employees, permissions }: 
 					<div className="grid gap-4 md:grid-cols-2">
 						<div>
 							<p className="text-sm text-muted-foreground">Start Date</p>
-							<p className="font-medium">{project.fecha_inicio || "-"}</p>
+							<p className="font-medium">{project.fechaInicio || "-"}</p>
 						</div>
 						<div>
 							<p className="text-sm text-muted-foreground">Estimated End Date</p>
 							<p className="font-medium">
-								{project.fecha_fin_estimada || "-"}
+								{project.fechaFinEstimada || "-"}
 							</p>
 						</div>
-						{project.fecha_fin_real && (
+						{project.fechaFinReal && (
 							<div>
 								<p className="text-sm text-muted-foreground">Actual End Date</p>
-								<p className="font-medium">{project.fecha_fin_real || "-"}</p>
+								<p className="font-medium">{project.fechaFinReal || "-"}</p>
 							</div>
 						)}
 					</div>
@@ -220,13 +227,16 @@ export function ProjectDetail({ project, assignments, employees, permissions }: 
 							</Button>
 						</DialogTrigger>
 						<DialogContent>
+							<DialogDescription>
+								Assign an employee to this project.
+							</DialogDescription>
 							<DialogHeader>
 								<DialogTitle>Assign Employee to Project</DialogTitle>
 							</DialogHeader>
 							<form onSubmit={handleCreateAssignment} className="space-y-4">
 								<div className="space-y-2">
-									<Label htmlFor="empleado_id">Employee *</Label>
-									<Select name="empleado_id" required>
+									<Label htmlFor="empleadoId">Employee *</Label>
+									<Select name="empleadoId" required>
 										<SelectTrigger>
 											<SelectValue placeholder="Select employee" />
 										</SelectTrigger>
@@ -241,17 +251,17 @@ export function ProjectDetail({ project, assignments, employees, permissions }: 
 								</div>
 								<div className="flex flex-wrap gap-8">
 									<div className="space-y-2">
-										<Label htmlFor="fecha_inicio">Start Date *</Label>
-										<Input id="fecha_inicio" name="fecha_inicio" type="date" required />
+										<Label htmlFor="fechaInicio">Start Date *</Label>
+										<Input id="fechaInicio" name="fechaInicio" type="date" required />
 									</div>
 									<div className="space-y-2">
-										<Label htmlFor="fecha_fin">End Date</Label>
-										<Input id="fecha_fin" name="fecha_fin" type="date" />
+										<Label htmlFor="fechaFin">End Date</Label>
+										<Input id="fechaFin" name="fechaFin" type="date" />
 									</div>
 								</div>
 								<div className="space-y-2">
-									<Label htmlFor="tipo_contrato">Contract Type *</Label>
-									<Select name="tipo_contrato" required>
+									<Label htmlFor="tipoContrato">Contract Type *</Label>
+									<Select name="tipoContrato" required>
 										<SelectTrigger>
 											<SelectValue placeholder="Select type" />
 										</SelectTrigger>
@@ -322,14 +332,14 @@ export function ProjectDetail({ project, assignments, employees, permissions }: 
 											{assignment.empleado.dni}
 										</TableCell>
 										<TableCell className="capitalize">
-											{assignment.tipo_contrato.replace("_", " ")}
+											{assignment.tipoContrato.replace("_", " ")}
 										</TableCell>
 										<TableCell className="capitalize">
 											{assignment.categoria?.replace("_", " ") || "-"}
 										</TableCell>
-										<TableCell>{assignment.fecha_inicio || "-"}</TableCell>
+										<TableCell>{assignment.fechaInicio || "-"}</TableCell>
 										<TableCell>
-											{assignment.fecha_fin || "-"}
+											{assignment.fechaFin || "-"}
 										</TableCell>
 										<TableCell>
 											<Badge variant={assignment.estado === "activo" ? "default" : "secondary"}>
@@ -374,6 +384,9 @@ export function ProjectDetail({ project, assignments, employees, permissions }: 
 			</Card>
 			<Dialog open={endAssignmentDialogOpen} onOpenChange={setEndAssignmentDialogOpen}>
 				<DialogContent>
+					<DialogDescription>
+					Set the end date for the assignment of {selectedAssignment?.empleado.nombre} {selectedAssignment?.empleado.apellido} to this project.
+					</DialogDescription>
 					<DialogHeader>
 						<DialogTitle>End Assignment</DialogTitle>
 						<DialogDescription>
@@ -399,6 +412,9 @@ export function ProjectDetail({ project, assignments, employees, permissions }: 
 			</Dialog>
 			<Dialog open={editAssignmentDialogOpen} onOpenChange={setEditAssignmentDialogOpen}>
 				<DialogContent>
+					<DialogDescription>
+						Edit Assignment
+					</DialogDescription>
 					<DialogHeader>
 						<DialogTitle>Edit Assignment</DialogTitle>
 					</DialogHeader>
@@ -410,36 +426,36 @@ export function ProjectDetail({ project, assignments, employees, permissions }: 
 									readOnly
 									value={`${selectedAssignment.empleado.nombre} ${selectedAssignment.empleado.apellido} - ${selectedAssignment.empleado.dni}`}
 								/>
-								<Input readOnly type="hidden" name="empleado_id" value={selectedAssignment.empleado.id} />
+								<Input readOnly type="hidden" name="empleadoId" value={selectedAssignment.empleado.id} />
 							</div>
 							<div className="flex flex-wrap gap-8">
 								<div className="space-y-2">
-									<Label htmlFor="fecha_inicio">Start Date *</Label>
+									<Label htmlFor="fechaInicio">Start Date *</Label>
 									<Input
-										id="fecha_inicio"
-										name="fecha_inicio"
+										id="fechaInicio"
+										name="fechaInicio"
 										type="date"
-										defaultValue={new Date(selectedAssignment.fecha_inicio).toISOString().split("T")[0]}
+										defaultValue={new Date(selectedAssignment.fechaInicio).toISOString().split("T")[0]}
 										required
 									/>
 								</div>
 								<div className="space-y-2">
-									<Label htmlFor="fecha_fin">End Date</Label>
+									<Label htmlFor="fechaFin">End Date</Label>
 									<Input
-										id="fecha_fin"
-										name="fecha_fin"
+										id="fechaFin"
+										name="fechaFin"
 										type="date"
 										defaultValue={
-											selectedAssignment.fecha_fin
-												? new Date(selectedAssignment.fecha_fin).toISOString().split("T")[0]
+											selectedAssignment.fechaFin
+												? new Date(selectedAssignment.fechaFin).toISOString().split("T")[0]
 												: ""
 										}
 									/>
 								</div>
 							</div>
 							<div className="space-y-2">
-								<Label htmlFor="tipo_contrato">Contract Type *</Label>
-								<Select name="tipo_contrato" defaultValue={selectedAssignment.tipo_contrato} required>
+								<Label htmlFor="tipoContrato">Contract Type *</Label>
+								<Select name="tipoContrato" defaultValue={selectedAssignment.tipoContrato} required>
 									<SelectTrigger>
 										<SelectValue placeholder="Select type" />
 									</SelectTrigger>

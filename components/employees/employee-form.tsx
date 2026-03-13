@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, type FC } from "react";
+import { type FC } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -19,12 +19,13 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type { Empleado } from "@/lib/data/types/database";
+import { InferTableQuery } from "@/lib/db/types";
 
+type Employee = Pick<InferTableQuery<"empleados">, "id" | "nombre" | "apellido" | "dni" | "fechaNacimiento" | "telefono" | "email" | "direccion" | "fechaIngreso" | "fechaEgreso" | "tipoContrato" | "categoria" | "observaciones">;
 type EmployeeFormValues = CreateEmployeeFormValues | EditEmployeeFormValues;
 
 interface EmployeeFormProps {
-	employee?: Empleado | null;
+	employee: Employee | null;
 }
 
 export const EmployeeForm: FC<EmployeeFormProps> = ({ employee }) => {
@@ -35,26 +36,20 @@ export const EmployeeForm: FC<EmployeeFormProps> = ({ employee }) => {
 	const form = useForm<EmployeeFormValues>({
 		resolver: zodResolver(formSchema),
 		defaultValues: {
-			nombre: "",
-			apellido: "",
-			dni: "",
-			fecha_nacimiento: "",
-			telefono: "",
-			email: "",
-			direccion: "",
-			fecha_ingreso: "",
-			fecha_egreso: "",
-			tipo_contrato: "",
-			categoria: "",
-			observaciones: "",
+			nombre: employee?.nombre ?? "",
+			apellido: employee?.apellido ?? "",
+			dni: employee?.dni ?? "",
+			fechaNacimiento: employee?.fechaNacimiento ?? "",
+			telefono: employee?.telefono ?? "",
+			email: employee?.email ?? "",
+			direccion: employee?.direccion ?? "",
+			fechaIngreso: employee?.fechaIngreso ?? "",
+			fechaEgreso: employee?.fechaEgreso ?? undefined,
+			tipoContrato: employee?.tipoContrato ?? "",
+			categoria: employee?.categoria ?? "",
+			observaciones: employee?.observaciones ?? "",
 		},
 	});
-
-	useEffect(() => {
-		if (employee) {
-			form.reset(employee);
-		}
-	}, [employee, form]);
 
 	const { isSubmitting } = form.formState;
 
@@ -127,10 +122,10 @@ export const EmployeeForm: FC<EmployeeFormProps> = ({ employee }) => {
 							/>
 							<FormField
 								control={form.control}
-								name="fecha_nacimiento"
+								name="fechaNacimiento"
 								render={({ field }) => (
 									<FormItem>
-										<FormLabel>Date of Birth</FormLabel>
+										<FormLabel>Date of Birth *</FormLabel>
 										<FormControl>
 											<Input type="date" {...field} value={field.value ?? ''} />
 										</FormControl>
@@ -148,7 +143,7 @@ export const EmployeeForm: FC<EmployeeFormProps> = ({ employee }) => {
 									<FormItem>
 										<FormLabel>Phone</FormLabel>
 										<FormControl>
-											<Input type="tel" {...field} value={field.value ?? ''} />
+											<Input type="tel" {...field} value={ field.value ?? ''} />
 										</FormControl>
 										<FormMessage />
 									</FormItem>
@@ -186,7 +181,7 @@ export const EmployeeForm: FC<EmployeeFormProps> = ({ employee }) => {
 						<div className="grid gap-4 md:grid-cols-3">
 							<FormField
 								control={form.control}
-								name="fecha_ingreso"
+								name="fechaIngreso"
 								render={({ field }) => (
 									<FormItem>
 										<FormLabel>Start Date *</FormLabel>
@@ -199,7 +194,7 @@ export const EmployeeForm: FC<EmployeeFormProps> = ({ employee }) => {
 							/>
 							<FormField
 								control={form.control}
-								name="fecha_egreso"
+								name="fechaEgreso"
 								render={({ field }) => (
 									<FormItem>
 										<FormLabel>End Date</FormLabel>
@@ -212,7 +207,7 @@ export const EmployeeForm: FC<EmployeeFormProps> = ({ employee }) => {
 							/>
 							<FormField
 								control={form.control}
-								name="tipo_contrato"
+								name="tipoContrato"
 								render={({ field }) => (
 									<FormItem>
 										<FormLabel>Contract Type</FormLabel>

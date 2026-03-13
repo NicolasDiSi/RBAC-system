@@ -1,6 +1,7 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { getSessionFromCookie } from "@/lib/services/auth/session";
 import jwt from 'jsonwebtoken';
+import { getUserWithRoleById } from "@/lib/data/user";
 
 // A simple, request-scoped cache for the Supabase client.
 let supabaseClient: SupabaseClient | null = null;
@@ -15,20 +16,14 @@ export async function getSupabaseServerClient(): Promise<SupabaseClient> {
   let supabaseAccessToken: string | undefined = undefined;
 
   if (session) {
-    // Use the service role client to get the user's real role from the database
-    const serviceClient = getSupabaseServiceRoleClient();
-    const { data: userData, error: userError } = await serviceClient
-      .from('users')
-      .select('role:roles(name)')
-      .eq('id', session.userId)
-      .single();
+    // Use the Drizzle function to get the user's real role from the database
+    const userWithRole = await getUserWithRoleById(session.userId);
 
-    if (userError) {
-      throw new Error(`Failed to fetch user role: ${userError.message}`);
+    if (!userWithRole) {
+      throw new Error(`Failed to fetch user role for user ID: ${session.userId}`);
     }
 
-    // Default to 'authenticated' if user has no specific role
-    const userRole = userData?.role?.name;
+    const userRole = userWithRole.role?.name;
     if (!userRole) {
       throw new Error("User does not have a role assigned.");
     }
@@ -63,22 +58,4 @@ export async function getSupabaseServerClient(): Promise<SupabaseClient> {
   );
 
   return supabaseClient;
-}
-
-export function getSupabaseServiceRoleClient() {
-  if (!process.env.SUPABASE_SERVICE_KEY) {
-    throw new Error("SUPABASE_SERVICE_KEY is not set in environment variables.");
-  }
-
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_KEY!,
-    {
-      auth: {
-        persistSession: false,
-        autoRefreshToken: false,
-        detectSessionInUrl: false,
-      },
-    }
-  );
 }

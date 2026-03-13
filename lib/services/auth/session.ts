@@ -1,7 +1,7 @@
 import 'server-only';
 import { cookies, headers } from 'next/headers';
 import { NextRequest } from 'next/server';
-import redis from '@/lib/services/redis';
+import { getRedisClient } from '@/lib/services/redis';
 
 const COOKIE_NAME = 'app_session';
 const SESSION_DURATION_SECONDS = 60 * 60 * 24 * 7; // 7 days
@@ -21,8 +21,9 @@ export interface SessionPayload {
  * To be used in API Routes or Server Actions.
  */
 export async function createSession(userId: string, email: string, roleId: string | null) {
+  const redis = await getRedisClient();
   const sessionId = crypto.randomUUID();
-  const requestHeaders = await headers()
+  const requestHeaders = await headers();
 
   const sessionPayload: SessionPayload = {
     userId,
@@ -31,7 +32,7 @@ export async function createSession(userId: string, email: string, roleId: strin
     createdAt: new Date().toISOString(),
     ip: requestHeaders.get('x-forwarded-for') ?? '127.0.0.1',
     device: requestHeaders.get('user-agent') ?? null,
-    location: null, // Location would require a Geo-IP service
+    location: null,
   };
 
   const multi = redis.multi();
@@ -55,6 +56,7 @@ export async function createSession(userId: string, email: string, roleId: strin
  * This version is for Middleware, as it reads from the request object.
  */
 export async function getSessionFromMiddleware(request: NextRequest): Promise<SessionPayload | null> {
+  const redis = await getRedisClient();
   const sessionId = request.cookies.get(COOKIE_NAME)?.value;
 
   if (!sessionId) {
@@ -77,6 +79,7 @@ export async function getSessionFromMiddleware(request: NextRequest): Promise<Se
  * This version is for Server Components and API Routes, as it uses `next/headers`.
  */
 export async function getSessionFromCookie(): Promise<SessionPayload | null> {
+  const redis = await getRedisClient();
   const cookieStore = await cookies()
   const sessionId = cookieStore.get(COOKIE_NAME)?.value
 
@@ -100,6 +103,7 @@ export async function getSessionFromCookie(): Promise<SessionPayload | null> {
  * To be used in API Routes or Server Actions.
  */
 export async function deleteSession() {
+  const redis = await getRedisClient();
   const cookieStore = await cookies();
   const sessionId = cookieStore.get(COOKIE_NAME)?.value;
 
@@ -124,6 +128,7 @@ export async function deleteSession() {
  * or to invalidate sessions after a password change.
  */
 export async function deleteUserSessions(userId: string) {
+  const redis = await getRedisClient();
   const userSessionKey = `user_sessions:${userId}`;
   const sessionIds = await redis.smembers(userSessionKey);
 

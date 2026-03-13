@@ -23,7 +23,7 @@ export async function enforceAuthentication() {
     redirect("/auth/login");
   }
 
-  if (!user.is_active) {
+  if (!user.isActive) {
     // The user exists but is awaiting admin approval.
     redirect("/auth/pending-activation");
   }

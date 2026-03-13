@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, type FC } from "react";
+import { type FC } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -19,12 +19,13 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type { Obra } from "@/lib/data/types/database";
+import { InferTableQuery } from "@/lib/db/types";
 
+type Project = Pick<InferTableQuery<'obras'>, 'id' |'nombre' | 'codigo' | 'ubicacion' | 'fechaInicio' | 'fechaFinEstimada' | 'fechaFinReal' | 'presupuesto' | 'descripcion' | 'estado'>;
 type ProjectFormValues = CreateProjectFormValues | EditProjectFormValues;
 
 interface ProjectFormProps {
-  project?: Obra | null;
+  project: Project | null;
 }
 
 export const ProjectForm: FC<ProjectFormProps> = ({ project }) => {
@@ -35,22 +36,17 @@ export const ProjectForm: FC<ProjectFormProps> = ({ project }) => {
   const form = useForm<ProjectFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      nombre: "",
-      codigo: "",
-      ubicacion: "",
-      fecha_inicio: "",
-      fecha_fin_estimada: "",
-      presupuesto: 0,
-      descripcion: "",
+      nombre: project?.nombre ?? "",
+      codigo: project?.codigo ?? "",
+      ubicacion: project?.ubicacion ?? "",
+      fechaInicio: project?.fechaInicio ? new Date(project.fechaInicio).toISOString().split('T')[0] : "",
+      fechaFinEstimada: project?.fechaFinEstimada ? new Date(project.fechaFinEstimada).toISOString().split('T')[0] : "",
+      fechaFinReal: project?.fechaFinReal ? new Date(project.fechaFinReal).toISOString().split('T')[0] : "",
+      presupuesto: project?.presupuesto ? Number(project.presupuesto) : 0,
+      descripcion: project?.descripcion ?? "",
       estado: "planificada",
     },
   });
-
-  useEffect(() => {
-    if (project) {
-      form.reset(project);
-    }
-  }, [project, form]);
 
   const { isSubmitting } = form.formState;
 
@@ -124,7 +120,7 @@ export const ProjectForm: FC<ProjectFormProps> = ({ project }) => {
             <div className="grid gap-4 md:grid-cols-3">
               <FormField
                 control={form.control}
-                name="fecha_inicio"
+                name="fechaInicio"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Start Date</FormLabel>
@@ -137,7 +133,7 @@ export const ProjectForm: FC<ProjectFormProps> = ({ project }) => {
               />
               <FormField
                 control={form.control}
-                name="fecha_fin_estimada"
+                name="fechaFinEstimada"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Estimated End Date</FormLabel>

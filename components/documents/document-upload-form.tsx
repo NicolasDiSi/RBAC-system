@@ -13,14 +13,15 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { uploadDocument } from "@/app/actions/documents"
-import type { Empleado } from "@/lib/data/types/database"
+import { type InferSelectModel } from 'drizzle-orm'
+import { empleados } from '@/lib/db/schema'
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ACCEPTED_FILE_TYPES = [".pdf", ".doc", ".docx", ".jpg", ".jpeg", ".png"];
 
 const formSchema = z.object({
-  empleado_id: z.string(),
-  tipo_documento: z.string(),
+  empleadoId: z.string(),
+  tipoDocumento: z.string(),
   file: z.any()
     .refine((files) => files?.length == 1, "File is required.")
     .refine((files) => files?.[0]?.size <= MAX_FILE_SIZE, `Max file size is 10MB.`)
@@ -28,18 +29,19 @@ const formSchema = z.object({
       (files) => ACCEPTED_FILE_TYPES.includes(files?.[0]?.type),
       ".jpg, .jpeg, .png and .pdf files are accepted."
     ),
-  fecha_vencimiento: z.string().optional(),
+  fechaVencimiento: z.string().optional(),
   observaciones: z.string().optional(),
 })
 
-export function DocumentUploadForm({ employees }: { employees: Empleado[] }) {
+type Employee = InferSelectModel<typeof empleados>;
+export function DocumentUploadForm({ employees }: { employees: Employee[] }) {
   const router = useRouter()
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      empleado_id: '',
-      tipo_documento: '',
-      fecha_vencimiento: '',
+      empleadoId: '',
+      tipoDocumento: '',
+      fechaVencimiento: '',
       observaciones: '',
     },
   })
@@ -48,11 +50,11 @@ export function DocumentUploadForm({ employees }: { employees: Empleado[] }) {
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     const formData = new FormData()
-    formData.append('empleado_id', values.empleado_id)
-    formData.append('tipo_documento', values.tipo_documento)
+    formData.append('empleadoId', values.empleadoId)
+    formData.append('tipoDocumento', values.tipoDocumento)
     formData.append('file', values.file[0])
-    if (values.fecha_vencimiento) {
-      formData.append('fecha_vencimiento', values.fecha_vencimiento)
+    if (values.fechaVencimiento) {
+      formData.append('fechaVencimiento', values.fechaVencimiento)
     }
     if (values.observaciones) {
       formData.append('observaciones', values.observaciones)
@@ -77,7 +79,7 @@ export function DocumentUploadForm({ employees }: { employees: Empleado[] }) {
           <CardContent className="space-y-6">
             <FormField
               control={form.control}
-              name="empleado_id"
+              name="empleadoId"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Employee *</FormLabel>
@@ -102,7 +104,7 @@ export function DocumentUploadForm({ employees }: { employees: Empleado[] }) {
 
             <FormField
               control={form.control}
-              name="tipo_documento"
+              name="tipoDocumento"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Document Type *</FormLabel>
@@ -144,7 +146,7 @@ export function DocumentUploadForm({ employees }: { employees: Empleado[] }) {
 
             <FormField
               control={form.control}
-              name="fecha_vencimiento"
+              name="fechaVencimiento"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Expiration Date</FormLabel>

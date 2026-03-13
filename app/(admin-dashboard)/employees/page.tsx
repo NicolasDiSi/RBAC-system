@@ -1,6 +1,6 @@
 import { enforceAuthentication } from "@/lib/services/auth/protection";
 import { checkPermission } from "@/lib/services/auth/permissions";
-import { getSupabaseServerClient } from "@/lib/services/supabase/server";
+import { getEmployees } from "@/app/actions/employees";
 import { EmployeesTable } from "@/components/employees/employees-table";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -15,10 +15,8 @@ export default async function EmployeesPage() {
     redirect("/unauthorized");
   }
 
-  const supabase = await getSupabaseServerClient();
-
   // Fetch all employees
-  const { data: employees } = await supabase.from("empleados").select("*").order("created_at", { ascending: false });
+  const employeesList = await getEmployees('recent');
 
   const canCreate = await checkPermission("employees.create");
 
@@ -38,7 +36,7 @@ export default async function EmployeesPage() {
             </Link>
           )}
         </div>
-        <EmployeesTable employees={employees || []} />
+        <EmployeesTable employees={employeesList} />
       </div>
   );
 }

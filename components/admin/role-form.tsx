@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, type FC } from 'react'
+import { type FC } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -28,25 +28,11 @@ export const RoleForm: FC<RoleFormProps> = ({ role, onSubmit, onSuccess, onError
   const form = useForm<RoleFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: '',
-      description: '',
+      name: role?.name ?? '',
+      description: role?.description ?? '',
     },
   })
-
-  useEffect(() => {
-    form.reset(
-      role
-        ? {
-            name: role.name,
-            description: role.description || '',
-          }
-        : {
-            name: '',
-            description: '',
-          }
-    )
-  }, [role, form])
-
+  
   const { isSubmitting } = form.formState
 
   const handleFormSubmit = async (values: RoleFormValues) => {

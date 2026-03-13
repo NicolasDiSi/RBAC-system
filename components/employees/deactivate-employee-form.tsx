@@ -7,10 +7,12 @@ import { deactivateEmployeeSchema, DeactivateEmployeeFormValues } from '@/lib/va
 import { Button } from '@/components/ui/button'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import type { Empleado } from '@/lib/data/types/database'
+import { type InferSelectModel } from 'drizzle-orm'
+import { empleados } from '@/lib/db/schema'
 
+type Employee = InferSelectModel<typeof empleados>;
 interface DeactivateEmployeeFormProps {
-  employee: Empleado
+  employee: Employee
   onSuccess: () => void
   onError: (error: Error) => void
   onCancel: () => void
@@ -25,7 +27,7 @@ export function DeactivateEmployeeForm({
   const form = useForm<DeactivateEmployeeFormValues>({
     resolver: zodResolver(deactivateEmployeeSchema),
     defaultValues: {
-      fecha_egreso: new Date().toISOString().split('T')[0],
+      fechaEgreso: new Date().toISOString().split('T')[0],
     },
   })
 
@@ -49,7 +51,7 @@ export function DeactivateEmployeeForm({
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <FormField
           control={form.control}
-          name="fecha_egreso"
+          name="fechaEgreso"
           render={({ field }) => (
             <FormItem>
               <FormLabel>End Date</FormLabel>

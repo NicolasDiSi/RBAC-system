@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, type FC } from 'react'
+import { type FC } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -11,11 +11,14 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
+import { InferTableQuery } from '@/lib/db/types'
 
-type UserFormValues = z.infer<typeof createUserSchema> | z.infer<typeof editUserSchema>
+export type UserFormValues = z.infer<typeof createUserSchema> | z.infer<typeof editUserSchema>
+
+type User = Pick<InferTableQuery<'users'>, 'id' | 'name' | 'email' | 'roleId' | 'isActive'>
 
 interface UserFormProps {
-  user?: any | null
+  user?: User | null
   roles: any[]
   onSubmit: (values: UserFormValues) => Promise<void>
   onSuccess?: (values: UserFormValues) => void
@@ -30,33 +33,13 @@ export const UserForm: FC<UserFormProps> = ({ user, roles, onSubmit, onSuccess, 
   const form = useForm<UserFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: '',
-      email: '',
+      name: user?.name ?? '',
+      email: user?.email ?? '',
       password: '',
-      role_id: null,
-      is_active: true,
+      roleId: user?.roleId ?? null,
+      isActive: user?.isActive ?? true,
     },
   })
-
-  useEffect(() => {
-    form.reset(
-      user
-        ? {
-            name: user.name,
-            email: user.email,
-            password: '',
-            role_id: user.role_id,
-            is_active: user.is_active,
-          }
-        : {
-            name: '',
-            email: '',
-            password: '',
-            role_id: undefined,
-            is_active: true,
-          }
-    )
-  }, [user, form])
 
   const { isSubmitting } = form.formState
 
@@ -64,7 +47,6 @@ export const UserForm: FC<UserFormProps> = ({ user, roles, onSubmit, onSuccess, 
     try {
       await onSubmit(values)
       onSuccess?.(values)
-      // Reset form only on successful creation
       if (!isEditing) {
         form.reset()
       }
@@ -117,7 +99,7 @@ export const UserForm: FC<UserFormProps> = ({ user, roles, onSubmit, onSuccess, 
         />
         <FormField
           control={form.control}
-          name="role_id"
+          name="roleId"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Role</FormLabel>
@@ -142,7 +124,7 @@ export const UserForm: FC<UserFormProps> = ({ user, roles, onSubmit, onSuccess, 
         />
         <FormField
           control={form.control}
-          name="is_active"
+          name="isActive"
           render={({ field }) => (
             <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
               <div className="space-y-0.5">

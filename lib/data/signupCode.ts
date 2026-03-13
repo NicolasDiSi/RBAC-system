@@ -1,96 +1,75 @@
-import { getSupabaseServiceRoleClient } from '@/lib/services/supabase/server'
-import { SignupCode } from '@/lib/data/types/database'
-import { executeQuery } from './query' // Added executeQuery import
 
-export const SignupCodeDAO = {
-  async getByCode(code: string): Promise<SignupCode | null> {
-    const supabase = await getSupabaseServiceRoleClient()
-    const query = supabase
-      .from('signup_codes')
-      .select('*')
-      .eq('code', code)
-      .single()
-    return executeQuery(query)
-  },
+import { eq } from 'drizzle-orm';
+import { getDb } from '../db';
+import { signupCodes } from '../db/schema';
+import { InferTableQuery, TableProps,} from '../db/types';
 
-  async getByUserId(userId: string): Promise<SignupCode | null> {
-    const supabase = await getSupabaseServiceRoleClient()
-    const query = supabase
-      .from('signup_codes')
-      .select('*')
-      .eq('user_id', userId)
-      .single()
-    return executeQuery(query)
-  },
 
-  async getAll(): Promise<SignupCode[]> {
-    const supabase = await getSupabaseServiceRoleClient()
-    const query = supabase
-      .from('signup_codes')
-      .select('*')
-      .order('created_at', { ascending: false })
-    return executeQuery(query)
-  },
+export type SignupCode<T extends TableProps<'signupCodes'>['with'] | undefined = undefined> = InferTableQuery<'signupCodes',undefined,T>;
+export type NewSignupCode = typeof signupCodes.$inferInsert;
 
-  async create(signupCodeData: { user_id: string; code: string; expires_at: string }): Promise<SignupCode> {
-    const supabase = await getSupabaseServiceRoleClient()
-    const query = supabase
-      .from('signup_codes')
-      .insert(signupCodeData)
-      .select()
-      .single()
-    return executeQuery(query)
-  },
 
-  async delete(id: string): Promise<void> {
-    const supabase = await getSupabaseServiceRoleClient()
-    const query = supabase
-      .from('signup_codes')
-      .delete()
-      .eq('id', id)
-    await executeQuery(query)
-  },
 
-  async markAsUsed(id: string): Promise<void> {
-    const supabase = await getSupabaseServiceRoleClient()
-    const query = supabase
-      .from('signup_codes')
-      .update({ is_used: true, used_at: new Date().toISOString() })
-      .eq('id', id)
-    await executeQuery(query)
-  },
+export async function getSignupCodeByCode(code: string): Promise<SignupCode | undefined> {
+  const db = await getDb();
+  return db.query.signupCodes.findFirst({
+    where: eq(signupCodes.code, code),
+  });
 }
 
-// Original functions, now using DAO
-export async function getSignupCodeByCode(code: string): Promise<SignupCode | null> {
-  return SignupCodeDAO.getByCode(code)
+export async function getSignupCodeByUsedId(userId: string): Promise<SignupCode | undefined> {
+  const db = await getDb();
+  return db.query.signupCodes.findFirst({
+    where: eq(signupCodes.usedByUserId, userId),
+  });
 }
 
-export async function getSignupCodeByUserId(userId: string): Promise<SignupCode | null> {
-  return SignupCodeDAO.getByUserId(userId)
+export async function getAllSignupCodes(): Promise<SignupCode<{ role: true, usedByUser: { columns: { name: true, email: true } } }>[]> {
+  const db = await getDb();
+  return db.query.signupCodes.findMany({
+    orderBy: (signupCodes, { desc }) => [desc(signupCodes.expiresAt)],
+    with: {
+        role: true,
+        usedByUser: {
+            columns: {
+                name: true,
+                email: true,
+            }
+        }
+    }
+  });
 }
 
-export async function getAllSignupCodes(): Promise<SignupCode[]> {
-  return SignupCodeDAO.getAll()
+export async function deleteSignupCode(id: string): Promise<SignupCode> {
+    const db = await getDb();
+    const [deletedCode] = await db.delete(signupCodes).where(eq(signupCodes.id, id)).returning();
+    return deletedCode;
 }
 
-export async function deleteSignupCode(id: string): Promise<void> {
-  return SignupCodeDAO.delete(id)
+export async function createSignupCode(
+    roleId: string | null,
+    expirationDurationMinutes: number
+): Promise<SignupCode> {
+  const db = await getDb();
+  
+  const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+  const expiresAt = new Date(Date.now() + expirationDurationMinutes * 60 * 1000);
+
+  const newCodeData: NewSignupCode = {
+    code,
+    expiresAt,
+    roleId: roleId,
+  };
+
+  const [createdCode] = await db.insert(signupCodes).values(newCodeData).returning();
+  return createdCode;
 }
 
-export async function createSignupCode(userId: string, expirationDuration: number): Promise<SignupCode> {
-  const supabase = await getSupabaseServiceRoleClient()
-  const code = Math.random().toString(36).substring(2, 10).toUpperCase() // Simple random code
-  const expiresAt = new Date(Date.now() + expirationDuration * 60 * 1000).toISOString() // duration in minutes
-
-  const { data: existingUser } = await supabase.from('users').select('id').eq('id', userId).single()
-  if (!existingUser) {
-    throw new Error('User not found.')
-  }
-
-  return SignupCodeDAO.create({ user_id: userId, code, expires_at: expiresAt })
-}
-
-export async function markSignupCodeAsUsed(id: string): Promise<void> {
-  return SignupCodeDAO.markAsUsed(id)
+export async function markSignupCodeAsUsed(codeId: string, userId: string): Promise<SignupCode> {
+  const db = await getDb();
+  const [usedCode] = await db.update(signupCodes)
+    .set({ isUsed: true, usedAt: new Date(), usedByUserId: userId })
+    .where(eq(signupCodes.id, codeId))
+    .returning();
+  return usedCode;
 }

@@ -1,6 +1,6 @@
 import { enforceAuthentication } from "@/lib/services/auth/protection";
 import { checkPermission } from "@/lib/services/auth/permissions";
-import { getSupabaseServerClient } from "@/lib/services/supabase/server";
+import { getReportStats } from "@/app/actions/reports";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Download, FileText, Users, Building2, TrendingUp } from "lucide-react";
@@ -14,26 +14,8 @@ export default async function ReportsPage() {
     redirect("/unauthorized");
   }
 
-  const supabase = await getSupabaseServerClient();
-
   // Fetch summary statistics
-  const { count: totalEmployees } = await supabase.from("empleados").select("*", { count: "exact", head: true });
-
-  const { count: activeEmployees } = await supabase
-    .from("empleados")
-    .select("*", { count: "exact", head: true })
-    .eq("estado", "activo");
-
-  const { count: totalProjects } = await supabase.from("obras").select("*", { count: "exact", head: true });
-
-  const { count: activeProjects } = await supabase
-    .from("obras")
-    .select("*", { count: "exact", head: true })
-    .eq("estado", "en_curso");
-
-  const { count: totalAssignments } = await supabase
-    .from("asignaciones_contratos")
-    .select("*", { count: "exact", head: true });
+  const { totalEmployees, activeEmployees, totalProjects, activeProjects, totalAssignments } = await getReportStats();
 
   const reports = [
     {

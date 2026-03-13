@@ -1,6 +1,6 @@
 import { enforceAuthentication } from "@/lib/services/auth/protection";
 import { checkPermission } from "@/lib/services/auth/permissions";
-import { getSupabaseServerClient } from "@/lib/services/supabase/server";
+import { getProjects } from "@/app/actions/projects";
 import { ProjectsTable } from "@/components/projects/projects-table";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -15,18 +15,8 @@ export default async function ProjectsPage() {
     redirect("/unauthorized");
   }
 
-  const supabase = await getSupabaseServerClient();
-
   // Fetch all projects with assignment counts
-  const { data: projects } = await supabase
-    .from("obras")
-    .select(
-      `
-      *,
-      asignaciones_contratos(count)
-    `
-    )
-    .order("created_at", { ascending: false });
+  const projects = await getProjects();
 
   const canCreate = await checkPermission("projects.create");
 

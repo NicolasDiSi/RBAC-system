@@ -18,6 +18,7 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
@@ -35,31 +36,19 @@ import { SignupCodeForm } from './signup-code-form'
 import { deleteSignupCode } from '@/app/actions/signupCode'
 import { Badge } from '@/components/ui/badge'
 import { format } from 'date-fns'
-import type { Role } from '@/lib/data/types/database'
-
-interface SignupCode {
-  id: string
-  code: string
-  role_id: string | null
-  used_by_user_id: string | null
-  expires_at: string
-  is_used: boolean
-  used_at: string | null
-  created_at: string
-}
-
-interface User {
-  id: string
-  name: string
-  email: string
-}
-
+import { SignupCode } from '@/lib/data/signupCode'
+import { Role } from '@/lib/data/role'
+import { User } from '@/lib/data/user'
 interface Permissions {
   canGenerate: boolean
   canDelete: boolean
 }
 
-export function SignupCodesTable({ signupCodes = [], users = [], roles = [], permissions }: { signupCodes: SignupCode[]; users: User[]; roles: Role[]; permissions: Permissions }) {
+export function SignupCodesTable({ signupCodes = [], users = [], roles = [], permissions }: {
+  users: User[];
+  signupCodes: SignupCode<{ role: true, usedByUser: { columns: { name: true, email: true } } }>[];
+  roles: Role[]; permissions: Permissions 
+}) {
   const router = useRouter()
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
@@ -96,14 +85,8 @@ export function SignupCodesTable({ signupCodes = [], users = [], roles = [], per
 
   const getAssignedRoleName = (roleId: string | null) => {
     if (!roleId) return 'N/A'
-    const role = roles.find(r => r.id === roleId)
+    const role = roles.find((r) => r.id === roleId)
     return role ? role.name : 'Unknown Role'
-  }
-
-  const getUsedByUserName = (userId: string | null) => {
-    if (!userId) return 'N/A'
-    const user = users.find(u => u.id === userId)
-    return user ? `${user.name} (${user.email})` : 'Unknown User'
   }
 
   return (
@@ -132,17 +115,17 @@ export function SignupCodesTable({ signupCodes = [], users = [], roles = [], per
           {signupCodes.map((code) => (
             <TableRow key={code.id}>
               <TableCell className="font-mono">{code.code}</TableCell>
-              <TableCell>{getAssignedRoleName(code.role_id)}</TableCell>
+              <TableCell>{code.role?.name ?? 'N/A'}</TableCell>
               <TableCell>
-                <Badge variant={code.is_used ? 'secondary' : (new Date(code.expires_at) < new Date() ? 'destructive' : 'default')}>
-                  {code.is_used ? `Used` : (new Date(code.expires_at) < new Date() ? 'Expired' : 'Active')}
+                <Badge variant={code.isUsed ? 'secondary' : (new Date(code.expiresAt) < new Date() ? 'destructive' : 'default')}>
+                  {code.isUsed ? `Used` : (new Date(code.expiresAt) < new Date() ? 'Expired' : 'Active')}
                 </Badge>
               </TableCell>
-              <TableCell>{getUsedByUserName(code.used_by_user_id)}</TableCell>
-              <TableCell>{format(new Date(code.expires_at), 'PPP p')}</TableCell>
-              <TableCell>{format(new Date(code.created_at), 'PPP p')}</TableCell>
+              <TableCell>{code.usedByUser ? `${code.usedByUser.name} (${code.usedByUser.email})` : 'N/A'}</TableCell>
+              <TableCell>{code.expiresAt === null ? 'N/A' : format(new Date(code.expiresAt), 'PPP p')}</TableCell>
+              <TableCell>{code.expiresAt === null ? 'N/A' : format(new Date(code.createdAt), 'PPP p')}</TableCell>
               <TableCell>
-                {permissions.canDelete && !code.is_used && (
+                {permissions.canDelete && !code.isUsed && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" className="h-8 w-8 p-0">
@@ -168,6 +151,9 @@ export function SignupCodesTable({ signupCodes = [], users = [], roles = [], per
 
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
         <DialogContent>
+          <DialogDescription>
+            Generate a new signup code
+          </DialogDescription>
           <DialogHeader>
             <DialogTitle>Generate New Signup Code</DialogTitle>
           </DialogHeader>

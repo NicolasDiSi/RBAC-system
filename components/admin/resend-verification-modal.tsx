@@ -31,7 +31,7 @@ export function ResendVerificationModal({ isOpen, onClose, userId, userEmail }: 
       toast.success(`Verification email sent to ${userEmail}!`)
       onClose()
     } catch (error) {
-      toast.error(error.message || 'Failed to send verification email.')
+      toast.error((error as Error).message || 'Failed to send verification email.')
     } finally {
       setIsLoading(false)
     }

@@ -1,33 +1,25 @@
-import { redirect, notFound } from "next/navigation";
-import { getSupabaseServerClient } from "@/lib/services/supabase/server";
+import { notFound } from "next/navigation";
 import { ProjectDetail } from "@/components/projects/project-detail";
 import { checkPermission } from "@/lib/services/auth/permissions";
+import { getProjectById, getProjectAssignments } from "@/app/actions/projects";
+import { getEmployees } from "@/app/actions/employees";
 
 export default async function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
 	const { id } = await params;
-	const supabase = await getSupabaseServerClient();
 
 	// Fetch project
-	const { data: project } = await supabase.from("obras").select("*").eq("id", id).single();
+	const project = await getProjectById(id);
 
 	if (!project) {
 		notFound();
 	}
 
 	// Fetch assignments with employee details
-	const { data: assignments } = await supabase
-		.from("asignaciones_contratos")
-		.select(
-			`
-      *,
-      empleado:empleados(*)
-    `
-		)
-		.eq("obra_id", id)
-		.order("fecha_inicio", { ascending: false });
+	const assignments = await getProjectAssignments(id);
 
 	// Fetch all employees for assignment form
-	const { data: employees } = await supabase.from("empleados").select("*").eq("estado", "activo").order("apellido");
+	const employeesList = await getEmployees('alphabetical');
+
 	const permissions = {
 		canUpdate: await checkPermission("projects.update"),
 	};
@@ -35,8 +27,8 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
 		<ProjectDetail
 			permissions={permissions}
 			project={project}
-			assignments={assignments || []}
-			employees={employees || []}
+			assignments={assignments}
+			employees={employeesList}
 		/>
 	);
 }

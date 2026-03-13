@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { getSupabaseServiceRoleClient } from '@/lib/services/supabase/server';
+import { getVerificationTokenByToken, markVerificationTokenAsUsed } from '@/lib/data/verificationToken';
+import { updateUserVerificationStatus } from '@/lib/data/user';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -9,51 +10,33 @@ export async function GET(request: Request) {
     return NextResponse.redirect(new URL('/auth/login?error=invalid_token', request.url));
   }
 
-  const supabase = await getSupabaseServiceRoleClient();
+  try {
+    // 1. Verify the token
+    const verificationToken = await getVerificationTokenByToken(token);
 
-  // 1. Verify the token
-  const { data: verificationToken, error: tokenError } = await supabase
-    .from('verification_tokens')
-    .select('*')
-    .eq('token', token)
-    .eq('type', 'email_verification')
-    .single();
+    if (!verificationToken || verificationToken.type !== 'email_verification') {
+      return NextResponse.redirect(new URL('/auth/login?error=invalid_token', request.url));
+    }
 
-  if (tokenError || !verificationToken) {
-    console.error('Token verification error:', tokenError);
-    return NextResponse.redirect(new URL('/auth/login?error=invalid_token', request.url));
-  }
+    if (verificationToken.isUsed) {
+      return NextResponse.redirect(new URL('/auth/login?error=token_already_used', request.url));
+    }
 
-  if (verificationToken.is_used) {
-    return NextResponse.redirect(new URL('/auth/login?error=token_already_used', request.url));
-  }
+    if (new Date(verificationToken.expiresAt) < new Date()) {
+      return NextResponse.redirect(new URL('/auth/login?error=token_expired', request.url));
+    }
 
-  if (new Date(verificationToken.expires_at) < new Date()) {
-    return NextResponse.redirect(new URL('/auth/login?error=token_expired', request.url));
-  }
+    // 2. Mark the token as used
+    await markVerificationTokenAsUsed(verificationToken.id);
 
-  // 2. Mark the token as used
-  const { error: updateTokenError } = await supabase
-    .from('verification_tokens')
-    .update({ is_used: true, updated_at: new Date().toISOString() })
-    .eq('id', verificationToken.id);
+    // 3. Update the user's verified_at status
+    await updateUserVerificationStatus(verificationToken.userId);
 
-  if (updateTokenError) {
-    console.error('Error marking token as used:', updateTokenError);
+    // 4. Redirect to login page with success message
+    return NextResponse.redirect(new URL('/auth/login?message=email_verified', request.url));
+    
+  } catch (error) {
+    console.error('Token verification error:', error);
     return NextResponse.redirect(new URL('/auth/login?error=server_error', request.url));
   }
-
-  // 3. Update the user's verified_at status
-  const { error: updateUserError } = await supabase
-    .from('users')
-    .update({ verified_at: new Date().toISOString() })
-    .eq('id', verificationToken.user_id);
-
-  if (updateUserError) {
-    console.error('Error updating user verified_at:', updateUserError);
-    return NextResponse.redirect(new URL('/auth/login?error=server_error', request.url));
-  }
-
-  // 4. Redirect to login page with success message
-  return NextResponse.redirect(new URL('/auth/login?message=email_verified', request.url));
 }

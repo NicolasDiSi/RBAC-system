@@ -34,11 +34,12 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog'
 import { ResendVerificationModal } from './resend-verification-modal'
-import { UserForm } from './user-form'
-import { ChangePasswordForm } from './change-password-form'
+import { UserForm, UserFormValues } from './user-form'
+import { ChangePasswordForm, ChangePasswordFormValues } from './change-password-form'
 import { ResetPasswordForm } from './reset-password-form'
+import { InferTableQuery } from '@/lib/db/types'
 
-export function UsersTable({ users, roles, permissions }) {
+export function UsersTable({ users, roles, permissions }:{users:InferTableQuery<'users',undefined,{role:true}>[], roles:InferTableQuery<'roles'>[], permissions:any}) {
   const [isResendVerificationModalOpen, setIsResendVerificationModalOpen] = useState(false)
   const [isChangePasswordDialogOpen, setIsChangePasswordDialogOpen] = useState(false)
   const [isResetPasswordDialogOpen, setIsResetPasswordDialogOpen] = useState(false)
@@ -52,28 +53,30 @@ export function UsersTable({ users, roles, permissions }) {
     router.refresh()
   }, [router])
 
-  const handleFormSubmit = async (values) => {
-    const isEditing = !!editingUser
-    const action = isEditing ? updateUser.bind(null, editingUser.id) : createUser
+  const handleFormSubmit = async (values:UserFormValues) => {
     const formData = new FormData()
     Object.entries(values).forEach(([key, value]) => {
       if (key === 'password' && !value) return
       // Append empty string for null/undefined, otherwise convert to string
       formData.append(key, value === null || value === undefined ? '' : String(value))
     })
-    await action(formData)
+    if (editingUser) {
+      await updateUser(editingUser.id, formData)
+    } else {
+      await createUser(formData)
+    }
   }
 
-  const handleChangePasswordSubmit = async (values) => {
+  const handleChangePasswordSubmit = async (values: ChangePasswordFormValues) => {
     if (!selectedUser) return
     const formData = new FormData()
     formData.append('password', values.password)
-    formData.append('sign_out_user', String(values.sign_out_user))
+    formData.append('signOutUser', String(values.signOutUser))
     await updateUserPassword(selectedUser.id, formData)
   }
 
-  const handleResetPasswordSubmit = async (values) => {
-    await resetPasswordForEmail(values.email)
+  const handleResetPasswordSubmit = async ({email}: {email: string}) => {
+    await resetPasswordForEmail(email)
   }
 
   const handleDeleteUser = async () => {
@@ -83,7 +86,7 @@ export function UsersTable({ users, roles, permissions }) {
       toast.success('User deleted successfully!')
       fetchUsers()
     } catch (error) {
-      toast.error(error.message || 'Failed to delete user.')
+      toast.error((error as Error).message || 'Failed to delete user.')
     } finally {
       setIsDeleteDialogOpen(false)
     }
@@ -137,8 +140,8 @@ export function UsersTable({ users, roles, permissions }) {
               <TableCell>{user.role?.name || 'No Role'}</TableCell>
               <TableCell>
                 <div className="flex items-center space-x-2">
-                  <Badge variant={user.is_active ? 'default' : 'outline'}>
-                    {user.is_active ? 'Active' : 'Inactive'}
+                  <Badge variant={user.isActive ? 'default' : 'outline'}>
+                    {user.isActive ? 'Active' : 'Inactive'}
                   </Badge>
                 </div>
               </TableCell>
@@ -194,6 +197,9 @@ export function UsersTable({ users, roles, permissions }) {
       </Table>
       <Dialog open={isUserFormOpen} onOpenChange={setIsUserFormOpen}>
         <DialogContent>
+          <DialogDescription>
+            {editingUser ? 'Edit User' : 'Create New User'}
+          </DialogDescription>
           <DialogHeader>
             <DialogTitle>{editingUser ? 'Edit User' : 'Create New User'}</DialogTitle>
           </DialogHeader>
@@ -213,6 +219,9 @@ export function UsersTable({ users, roles, permissions }) {
       </Dialog>
       <Dialog open={isChangePasswordDialogOpen} onOpenChange={setIsChangePasswordDialogOpen}>
         <DialogContent>
+          <DialogDescription>
+            Change the password for {selectedUser?.name}
+          </DialogDescription>
           <DialogHeader>
             <DialogTitle>Change Password for {selectedUser?.name}</DialogTitle>
             <DialogDescription>
@@ -232,6 +241,9 @@ export function UsersTable({ users, roles, permissions }) {
       </Dialog>
       <Dialog open={isResetPasswordDialogOpen} onOpenChange={setIsResetPasswordDialogOpen}>
         <DialogContent>
+          <DialogDescription>
+            Reset the password for {selectedUser?.name}
+          </DialogDescription>
           <DialogHeader>
             <DialogTitle>Reset Password for {selectedUser?.name}</DialogTitle>
             <DialogDescription>

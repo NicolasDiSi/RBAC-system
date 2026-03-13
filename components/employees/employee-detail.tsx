@@ -10,13 +10,23 @@ import { ArrowLeft, Edit, FileText, History, Briefcase, UserX } from "lucide-rea
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { DeactivateEmployeeForm } from "./deactivate-employee-form"
 import { toast } from "sonner"
-import type { Empleado, AsignacionContrato, Documento, HistorialRelacionLaboral } from "@/lib/data/types/database"
+import { type InferSelectModel } from 'drizzle-orm'
+import { empleados, asignacionesContratos, documentos, historialRelacionLaboral } from '@/lib/db/schema'
+
+type Employee = InferSelectModel<typeof empleados>;
+type Document = InferSelectModel<typeof documentos>;
+type HistoryEvent = InferSelectModel<typeof historialRelacionLaboral> & {
+  obra: { nombre: string } | null
+};
+type Assignment = InferSelectModel<typeof asignacionesContratos> & {
+  obra: { nombre: string }
+};
 
 interface EmployeeDetailProps {
-  employee: Empleado
-  assignments: (AsignacionContrato & { obra: { nombre: string } })[]
-  documents: Documento[]
-  history: (HistorialRelacionLaboral & { obra: { nombre: string } | null })[]
+  employee: Employee
+  assignments: Assignment[]
+  documents: Document[]
+  history: HistoryEvent[]
   permissions: {
     canUpdate: boolean
     canDeactivate: boolean
@@ -77,7 +87,7 @@ export function EmployeeDetail({ employee, assignments, documents, history, perm
             <CardTitle className="text-sm font-medium text-muted-foreground">Contract Type</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-lg font-semibold capitalize">{employee.tipo_contrato?.replace("_", " ") || "-"}</p>
+            <p className="text-lg font-semibold capitalize">{employee.tipoContrato?.replace("_", " ") || "-"}</p>
           </CardContent>
         </Card>
         <Card>
@@ -117,17 +127,17 @@ export function EmployeeDetail({ employee, assignments, documents, history, perm
                 <div>
                   <p className="text-sm text-muted-foreground">Date of Birth</p>
                   <p className="font-medium">
-                    {employee.fecha_nacimiento ? new Date(employee.fecha_nacimiento).toLocaleDateString() : "-"}
+                    {employee.fechaNacimiento ? new Date(employee.fechaNacimiento).toLocaleDateString() : "-"}
                   </p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Start Date</p>
-                  <p className="font-medium">{new Date(employee.fecha_ingreso).toLocaleDateString()}</p>
+                  <p className="font-medium">{new Date(employee.fechaIngreso).toLocaleDateString()}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">End Date</p>
                   <p className="font-medium">
-                    {employee.fecha_egreso ? new Date(employee.fecha_egreso).toLocaleDateString() : "-"}
+                    {employee.fechaEgreso ? new Date(employee.fechaEgreso).toLocaleDateString() : "-"}
                   </p>
                 </div>
                 <div>
@@ -174,9 +184,9 @@ export function EmployeeDetail({ employee, assignments, documents, history, perm
                     {assignments.map((assignment) => (
                       <TableRow key={assignment.id}>
                         <TableCell className="font-medium">{assignment.obra.nombre}</TableCell>
-                        <TableCell>{new Date(assignment.fecha_inicio).toLocaleDateString()}</TableCell>
+                        <TableCell>{new Date(assignment.fechaInicio).toLocaleDateString()}</TableCell>
                         <TableCell>
-                          {assignment.fecha_fin ? new Date(assignment.fecha_fin).toLocaleDateString() : "Ongoing"}
+                          {assignment.fechaFin ? new Date(assignment.fechaFin).toLocaleDateString() : "Ongoing"}
                         </TableCell>
                         <TableCell className="capitalize">{assignment.categoria?.replace("_", " ") || "-"}</TableCell>
                         <TableCell>
@@ -214,9 +224,9 @@ export function EmployeeDetail({ employee, assignments, documents, history, perm
                   <TableBody>
                     {documents.map((doc) => (
                       <TableRow key={doc.id}>
-                        <TableCell className="font-medium capitalize">{doc.tipo_documento.replace("_", " ")}</TableCell>
-                        <TableCell>{doc.nombre_archivo}</TableCell>
-                        <TableCell>{new Date(doc.fecha_subida).toLocaleDateString()}</TableCell>
+                        <TableCell className="font-medium capitalize">{doc.tipoDocumento.replace("_", " ")}</TableCell>
+                        <TableCell>{doc.nombreArchivo}</TableCell>
+                        <TableCell>{doc.fechaSubida ? new Date(doc.fechaSubida).toLocaleDateString() : "-"}</TableCell>
                         <TableCell>
                           <Badge variant={doc.estado === "vigente" ? "default" : "secondary"}>{doc.estado}</Badge>
                         </TableCell>
@@ -243,14 +253,14 @@ export function EmployeeDetail({ employee, assignments, documents, history, perm
                     <div key={event.id} className="border-l-2 border-primary pl-4 pb-4">
                       <div className="flex items-start justify-between">
                         <div>
-                          <p className="font-medium capitalize">{event.tipo_evento.replace("_", " ")}</p>
+                          <p className="font-medium capitalize">{event.tipoEvento.replace("_", " ")}</p>
                           <p className="text-sm text-muted-foreground">{event.descripcion}</p>
                           {event.obra && (
                             <p className="text-sm text-muted-foreground mt-1">Project: {event.obra.nombre}</p>
                           )}
                         </div>
                         <p className="text-sm text-muted-foreground">
-                          {new Date(event.fecha_evento).toLocaleDateString()}
+                          {new Date(event.fechaEvento).toLocaleDateString()}
                         </p>
                       </div>
                     </div>
@@ -265,6 +275,9 @@ export function EmployeeDetail({ employee, assignments, documents, history, perm
       </Tabs>
       <Dialog open={deactivateDialogOpen} onOpenChange={setDeactivateDialogOpen}>
         <DialogContent>
+          <DialogDescription>
+            Are you sure you want to deactivate {employee.nombre} {employee.apellido}?
+          </DialogDescription>
           <DialogHeader>
             <DialogTitle>Deactivate Employee</DialogTitle>
             <DialogDescription>

@@ -3,7 +3,10 @@
 import { revalidatePath } from "next/cache"
 import { getAuthenticatedUser } from "@/lib/services/auth/user"
 import { checkPermission } from "@/lib/services/auth/permissions"
-import { DocumentDAO } from "@/lib/data/document"
+import  * as DocumentDAO from "@/lib/data/document"
+import { getDb } from "@/lib/db"
+import { documentos } from "@/lib/db/schema"
+import { desc, eq } from "drizzle-orm"
 
 export async function uploadDocument(formData: FormData) {
   const user = await getAuthenticatedUser()
@@ -12,9 +15,9 @@ export async function uploadDocument(formData: FormData) {
     throw new Error("Unauthorized")
   }
 
-  const empleado_id = formData.get("empleado_id") as string
-  const tipo_documento = formData.get("tipo_documento") as string
-  const fecha_vencimiento = formData.get("fecha_vencimiento") as string
+  const empleadoId = formData.get("empleadoId") as string
+  const tipoDocumento = formData.get("tipoDocumento") as string
+  const fechaVencimiento = formData.get("fechaVencimiento") as string
   const observaciones = formData.get("observaciones") as string
   const file = formData.get("file") as File
 
@@ -26,9 +29,9 @@ export async function uploadDocument(formData: FormData) {
   const fileUrl = `/uploads/${fileName}` // Placeholder URL
 
   let estado = "vigente"
-  if (fecha_vencimiento) {
+  if (fechaVencimiento) {
     const daysUntilExpiry = Math.floor(
-      (new Date(fecha_vencimiento).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24),
+      (new Date(fechaVencimiento).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24),
     )
     if (daysUntilExpiry < 0) {
       estado = "vencido"
@@ -38,20 +41,20 @@ export async function uploadDocument(formData: FormData) {
   }
 
   const documentData = {
-    empleado_id,
-    tipo_documento,
-    nombre_archivo: file.name,
-    url_archivo: fileUrl,
-    fecha_vencimiento: fecha_vencimiento || null,
+    empleadoId,
+    tipoDocumento,
+    nombreArchivo: file.name,
+    urlArchivo: fileUrl,
+    fechaVencimiento: fechaVencimiento || null,
     estado,
     observaciones: observaciones || null,
-    uploaded_by: user?.id,
+    uploadedBy: user?.id,
   }
 
-  const document = await DocumentDAO.create(documentData)
+  const document = await DocumentDAO.createDocument(documentData)
 
   revalidatePath("/documents")
-  revalidatePath(`/employees/${empleado_id}`)
+  revalidatePath(`/employees/${empleadoId}`)
   return document
 }
 
@@ -61,13 +64,41 @@ export async function deleteDocument(documentId: string) {
     throw new Error("Unauthorized")
   }
 
-  const document = await DocumentDAO.getById(documentId)
+  const document = await DocumentDAO.getDocumentById(documentId)
   if (!document) {
     throw new Error("Document not found")
   }
 
-  await DocumentDAO.delete(documentId)
+  await DocumentDAO.deleteDocument(documentId)
 
   revalidatePath("/documents")
-  revalidatePath(`/employees/${document.empleado_id}`)
+  revalidatePath(`/employees/${document.empleadoId}`)
+}
+
+export async function getDocuments() {
+  const hasPermission = await checkPermission("documents.read");
+  if (!hasPermission) {
+    throw new Error("Unauthorized");
+  }
+  const db = await getDb();
+  return db.query.documentos.findMany({
+    with: {
+      empleado: {
+        columns: { nombre: true, apellido: true, dni: true },
+      },
+    },
+    orderBy: [desc(documentos.fechaSubida)],
+  });
+}
+
+export async function getDocumentsByEmployeeId(employeeId: string) {
+  const hasPermission = await checkPermission("documents.read");
+  if (!hasPermission) {
+    throw new Error("Unauthorized");
+  }
+  const db = await getDb();
+  return db.query.documentos.findMany({
+    where: eq(documentos.empleadoId, employeeId),
+    orderBy: [desc(documentos.fechaSubida)]
+  });
 }

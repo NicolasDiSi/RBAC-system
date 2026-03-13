@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import { getUserById } from '@/lib/data/user';
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }>}) {
   try {
-    const userId = params.id;
+    const { id:userId } = await params;
 
     if (!userId) {
       return NextResponse.json({ message: 'User ID is required' }, { status: 400 });
@@ -20,9 +20,9 @@ export async function GET(request: Request, { params }: { params: { id: string }
       id: user.id,
       email: user.email,
       name: user.name,
-      avatar_url: user.avatar_url,
-      is_active: user.is_active,
-      role_id: user.role_id,
+      avatar_url: user.avatarUrl,
+      is_active: user.isActive,
+      role_id: user.roleId,
     });
   } catch (error) {
     console.error('Error fetching user data:', error);
