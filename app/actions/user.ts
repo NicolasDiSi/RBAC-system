@@ -1,9 +1,15 @@
 'use server'
 
 import * as UserDAO from '@/lib/data/user'
+import { createVerificationToken } from './verificationToken'
+import { sendPasswordResetEmail, sendPasswordChangedEmail } from '@/lib/services/email'
 
 export async function updateUserPassword(userId: string, newPasswordPlain: string): Promise<void> {
   await UserDAO.updateUserPassword(userId, newPasswordPlain)
+  const user = await UserDAO.getUserById(userId)
+  if (user) {
+    await sendPasswordChangedEmail(user.email)
+  }
 }
 
 export async function linkGoogleAccountToUser(
@@ -19,4 +25,17 @@ export async function linkGoogleAccountToUser(
     name: googleName,
     avatarUrl: googleAvatarUrl,
   })
+}
+
+export async function recoverPassword(email: string): Promise<void> {
+  const user = await UserDAO.getUserByEmail(email)
+  if (user) {
+    const { token } = await createVerificationToken(user.id, 'password_reset')
+    try {
+      await sendPasswordResetEmail(user.email, token)
+    } catch (error) {
+      console.error("Failed to queue password reset email:", error)
+      throw new Error("Could not send reset email. Please try again later.")
+    }
+  }
 }
